@@ -20,7 +20,7 @@ local ktTabData = {
     strHeaderLeftLabelText = "Categories and Filter",
   },
   ["CreateSearchEntryTab"] = {
-    strHeaderLeftLabelText = "Placeholder 1",
+    strHeaderLeftLabelText = "Pick content",
   },
 }
 
@@ -123,8 +123,6 @@ function BetterGroupFinder:OnBetterGroupFinderOn()
   end
   if not bHeaderIsSelected then
     self:SelectListOfSeekersHeader()
-    self:BuildCategoriesList()
-    self:BuildActivitiesList()
   end
 end
 
@@ -250,18 +248,32 @@ end
 
 function BetterGroupFinder:SetHeaderLeftText(strText)
   local wndHeaderLeftLabel = self.wndMain:FindChild("HeaderLeftLabel"):SetText(strText)
+  self.wndMain:FindChild("ListOfSeekersBtn"):SetCheck(false)
+  self.wndMain:FindChild("CreateSearchEntryBtn"):SetCheck(true)
+  self.wndMain:FindChild("TabContentRightTopListOfSeekers"):Show(false)
+  self.wndMain:FindChild("TabContentRightBottomListOfSeekers"):Show(false)
 end
 
 function BetterGroupFinder:SelectListOfSeekersHeader()
   self:SetHeaderLeftText(ktTabData["ListOfSeekersTab"].strHeaderLeftLabelText)
   self.wndMain:FindChild("ListOfSeekersBtn"):SetCheck(true)
   self.wndMain:FindChild("CreateSearchEntryBtn"):SetCheck(false)
+  self.wndMain:FindChild("TabContentRightTopListOfSeekers"):Show(true)
+  self.wndMain:FindChild("TabContentRightBottomListOfSeekers"):Show(true)
+  self.wndMain:FindChild("TabContentListLeft"):SetAnchorOffsets(0, 64, 0, 0)
+  self.wndMain:FindChild("FilterSettings"):Show(true)
+  self:BuildCategoriesList()
+  self:BuildActivitiesList()
 end
 
 function BetterGroupFinder:SelectCreateSearchEntryHeader()
   self:SetHeaderLeftText(ktTabData["CreateSearchEntryTab"].strHeaderLeftLabelText)
   self.wndMain:FindChild("CreateSearchEntryBtn"):SetCheck(true)
   self.wndMain:FindChild("ListOfSeekersBtn"):SetCheck(false)
+  self.wndMain:FindChild("TabContentListLeft"):DestroyChildren()
+  self.wndMain:FindChild("TabContentListLeft"):SetAnchorOffsets(0, 0, 0, 0)
+  self.wndMain:FindChild("FilterSettings"):Show(false)
+  
 end
 
 function BetterGroupFinder:BuildCategoriesList()
@@ -280,10 +292,9 @@ function BetterGroupFinder:BuildCategoriesList()
 end
 
 function BetterGroupFinder:BuildActivitiesList()
-  local wndActivitiesGrid = self.wndMain:FindChild("TabContentRightTopGrid")
   local i = 1
   while i < 20 do
-    local wndParent = self.wndMain:FindChild("TabContentRightTop")
+    local wndParent = self.wndMain:FindChild("TabContentRightTopListOfSeekers")
     local wndCurrItem = Apollo.LoadForm(self.xmlDoc, "TabContentRightGridItemBase", wndParent, self)
     local wndCurrItemTitleText = wndCurrItem:FindChild("TabContentRightItemBaseBtnTitle")
     local wndCurrItemGroupStatusText = wndCurrItem:FindChild("TabContentRightItemBaseBtnGroupStatusText")
