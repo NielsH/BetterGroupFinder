@@ -93,6 +93,35 @@ local ktCategoriesToSprite = {
   ["Open World"] = "CRB_InterfaceMenuList:spr_InterfaceMenuList_SilverFlagStretch",
 }
 
+local tMatchmakerSprites = {
+  "matchmaker:Matchmaker_BG_AdventureCrimelords",
+  "matchmaker:Matchmaker_BG_AdventureHycrest",
+  "matchmaker:Matchmaker_BG_AdventureMalgrave",
+  "matchmaker:Matchmaker_BG_AdventureOutpost",
+  "matchmaker:Matchmaker_BG_Adventures",
+  "matchmaker:Matchmaker_BG_AdventureWaroftheWilds",
+  "matchmaker:Matchmaker_BG_Arenas",
+  "matchmaker:Matchmaker_BG_Battlegrounds",
+  "matchmaker:Matchmaker_BG_BattlegroundsBloodsworn",
+  "matchmaker:Matchmaker_BG_BattlegroundsBoneshatter",
+  "matchmaker:Matchmaker_BG_BattlegroundsDaggerstone",
+  "matchmaker:Matchmaker_BG_BattlegroundsWalatiki",
+  "matchmaker:Matchmaker_BG_DungeonKelvoreth",
+  "matchmaker:Matchmaker_BG_Dungeons",
+  "matchmaker:Matchmaker_BG_DungeonSkullcano",
+  "matchmaker:Matchmaker_BG_DungeonStormtalon",
+  "matchmaker:Matchmaker_BG_DungeonSwordmaiden",
+  "matchmaker:Matchmaker_BG_Expeditions",
+  "matchmaker:Matchmaker_BG_RaidDatascape",
+  "matchmaker:Matchmaker_BG_ShiphandsDeepSpace",
+  "matchmaker:Matchmaker_BG_ShiphandsFragmentZero",
+  "matchmaker:Matchmaker_BG_ShiphandsGauntlet",
+  "matchmaker:Matchmaker_BG_ShiphandsInfestation",
+  "matchmaker:Matchmaker_BG_ShiphandsRageLogic",
+  "matchmaker:Matchmaker_BG_ShiphandsSpaceMadness",
+  "matchmaker:Matchmaker_BG_Warplots",
+}
+
 -----------------------------------------------------------------------------------------------
 -- Initialization
 -----------------------------------------------------------------------------------------------
@@ -354,6 +383,7 @@ function BetterGroupFinder:SelectListOfSeekersHeader()
   self.wndMain:FindChild("TabContentListLeft"):SetAnchorOffsets(0, 64, 0, 0)
   self.wndMain:FindChild("FilterSettings"):Show(true)
   self.wndMain:FindChild("TabContentRightCreateSearchEntry"):Show(false)
+--  self.wndMain:FindChild("TabContentRight"):SetSprite("")
   self:BuildCategoriesList()
   self:BuildActivitiesList()
 end
@@ -366,6 +396,7 @@ function BetterGroupFinder:SelectCreateSearchEntryHeader()
   self.wndMain:FindChild("TabContentListLeft"):SetAnchorOffsets(0, 0, 0, 0)
   self.wndMain:FindChild("FilterSettings"):Show(false)
   self.wndMain:FindChild("TabContentRightCreateSearchEntry"):Show(true)
+--  self.wndMain:FindChild("TabContentRight"):SetSprite(tMatchmakerSprites[math.random(#tMatchmakerSprites)])
   self:BuildCreateSearchEntriesActivitiesList()
 end
 
