@@ -36,11 +36,11 @@ local ktCategoriesData = {
 }
 
 local ktCategoriesToSprite = {
-  ["Show All"] = "achievements:sprAchievements_Icon_Group",
-  ["Raids"] = "achievements:sprAchievements_Icon_Group",
-  ["Dungeons"] = "achievements:sprAchievements_Icon_Group",
-  ["Adventures"] = "charactercreate:sprCharC_Finalize_SkillLevel1",
-  ["Expeditions"] = "charactercreate:sprCharC_Finalize_SkillLevel2_Disabled",
+  ["Show All"] = "IconSprites:Icon_Mission_Scientist_SpecimenSurvey",
+  ["Raids"] = "IconSprites:Icon_Mission_Settler_Posse",
+  ["Dungeons"] = "IconSprites:Icon_Mission_Explorer_Explorerdoor",
+  ["Adventures"] = "IconSprites:Icon_Mission_Explorer_Vista",
+  ["Expeditions"] = "IconSprites:Icon_Mission_Explorer_PowerMap",
   ["PvP"] = "Contracts:sprContracts_PvP",
   ["Quests and Events"] = "matchmaker:ContentType_Quest",
   ["Open World"] = "CRB_InterfaceMenuList:spr_InterfaceMenuList_SilverFlagStretch",
@@ -275,7 +275,7 @@ function BetterGroupFinder:BuildCategoriesList()
     wndCurrItem:SetData(eCategoryType)
     wndCurrItem:SetAnchorPoints(0, 0, 0, 0)
     local nLeft, nTop, nRight, nBottom = wndCurrItem:GetAnchorOffsets()
-    wndCurrItem:SetAnchorOffsets(nLeft, ((nSortOrder - 1) * 57), (nRight - 8), (nSortOrder * 57))
+    wndCurrItem:SetAnchorOffsets(nLeft, ((nSortOrder - 1) * 60), (nRight - 8), (nSortOrder * 60))
   end
 end
 
