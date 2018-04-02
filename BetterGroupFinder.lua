@@ -383,7 +383,7 @@ function BetterGroupFinder:SelectListOfSeekersHeader()
   self.wndMain:FindChild("TabContentListLeft"):SetAnchorOffsets(0, 64, 0, 0)
   self.wndMain:FindChild("FilterSettings"):Show(true)
   self.wndMain:FindChild("TabContentRightCreateSearchEntry"):Show(false)
---  self.wndMain:FindChild("TabContentRight"):SetSprite("")
+  self.wndMain:FindChild("TabContentRight"):SetSprite("")
   self:BuildCategoriesList()
   self:BuildActivitiesList()
 end
@@ -396,7 +396,7 @@ function BetterGroupFinder:SelectCreateSearchEntryHeader()
   self.wndMain:FindChild("TabContentListLeft"):SetAnchorOffsets(0, 0, 0, 0)
   self.wndMain:FindChild("FilterSettings"):Show(false)
   self.wndMain:FindChild("TabContentRightCreateSearchEntry"):Show(true)
---  self.wndMain:FindChild("TabContentRight"):SetSprite(tMatchmakerSprites[math.random(#tMatchmakerSprites)])
+  self.wndMain:FindChild("TabContentRight"):SetSprite(tMatchmakerSprites[math.random(#tMatchmakerSprites)])
   self:BuildCreateSearchEntriesActivitiesList()
 end
 
