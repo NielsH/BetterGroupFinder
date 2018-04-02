@@ -35,6 +35,53 @@ local ktCategoriesData = {
   ["Open World"] = 8,
 }
 
+local ktCategoriesToActivities = {
+  ["Raids"] = {
+    ["Genetic Archives"] = {
+    },
+    ["Datascape"] = {
+    },
+    ["Redmoon Terror"] = {
+    },
+  },
+  ["Dungeons"] = {
+    ["Placeholder"] = {
+    },
+    ["Placeholder 2"] = {
+    },
+  },
+  ["Adventures"] = {
+    ["Placeholder"] = {
+    },
+    ["Placeholder 2"] = {
+    },
+  },
+  ["Expeditions"] = {
+    ["Placeholder"] = {
+    },
+    ["Placeholder 2"] = {
+    },
+  },
+  ["PvP"] = {
+    ["Placeholder"] = {
+    },
+    ["Placeholder 2"] = {
+    },
+  },
+  ["Quests and Events"] = {
+    ["Placeholder"] = {
+    },
+    ["Placeholder 2"] = {
+    },
+  },
+  ["Open World"] = {
+    ["Placeholder"] = {
+    },
+    ["Placeholder 2"] = {
+    },
+  },
+}
+
 local ktCategoriesToSprite = {
   ["Show All"] = "IconSprites:Icon_Mission_Scientist_SpecimenSurvey",
   ["Raids"] = "IconSprites:Icon_Mission_Settler_Posse",
@@ -115,7 +162,6 @@ function BetterGroupFinder:OnBetterGroupFinderOn()
 
   -- if no header is selected yet show the default one
   local bHeaderIsSelected = false
-  Event_FireGenericEvent("SendVarToRover", "HeaderButtons", self.wndHeaderButtons, 0)
   for _, btn in pairs(self.wndHeaderButtons) do
     if not bHeaderIsSelected and btn:IsChecked() then
       bHeaderIsSelected = true
@@ -219,6 +265,50 @@ end
 function BetterGroupFinder:CPrint(str)
   ChatSystemLib.PostOnChannel(ChatSystemLib.ChatChannel_Command, str, "")
 end
+
+local function __genOrderedIndex( t )
+  local orderedIndex = {}
+  for key in pairs(t) do
+    table.insert( orderedIndex, key )
+  end
+  table.sort( orderedIndex )
+  return orderedIndex
+end
+
+local function orderedNext(t, state)
+  -- Equivalent of the next function, but returns the keys in the alphabetic
+  -- order. We use a temporary ordered key table that is stored in the
+  -- table being iterated.
+
+  local key = nil
+  --print("orderedNext: state = "..tostring(state) )
+  if state == nil then
+    -- the first time, generate the index
+    t.__orderedIndex = __genOrderedIndex( t )
+    key = t.__orderedIndex[1]
+  else
+    -- fetch the next value
+    for i = 1,table.getn(t.__orderedIndex) do
+      if t.__orderedIndex[i] == state then
+        key = t.__orderedIndex[i+1]
+      end
+    end
+  end
+
+  if key then
+    return key, t[key]
+  end
+
+  -- no more value to return, cleanup
+  t.__orderedIndex = nil
+  return
+end
+
+local function orderedPairs(t)
+  -- Equivalent of the pairs() function on tables. Allows to iterate
+  -- in order
+  return orderedNext, t, nil
+end
 -----------------------------------------------------------------------------------------------
 -- BetterGroupFinderForm Functions
 -----------------------------------------------------------------------------------------------
@@ -275,10 +365,11 @@ function BetterGroupFinder:SelectCreateSearchEntryHeader()
   self.wndMain:FindChild("TabContentListLeft"):SetAnchorOffsets(0, 0, 0, 0)
   self.wndMain:FindChild("FilterSettings"):Show(false)
   self.wndMain:FindChild("TabContentRightCreateSearchEntry"):Show(true)
+  self:BuildCreateSearchEntriesActivitiesList()
 end
 
 function BetterGroupFinder:BuildCategoriesList()
-  for eCategoryType, nSortOrder in pairs(ktCategoriesData) do
+  for eCategoryType, nSortOrder in orderedPairs(ktCategoriesData) do
     local wndParent = self.wndMain:FindChild("TabContentListLeft")
     local wndCurrItem = Apollo.LoadForm(self.xmlDoc, "FilterCategoriesBase", wndParent, self)
     local wndCurrItemBtnText = wndCurrItem:FindChild("FilterCategoriesBaseBtnText")
@@ -307,6 +398,34 @@ function BetterGroupFinder:BuildActivitiesList()
     wndCurrItem:SetAnchorOffsets(nLeft, ((i - 1) * 45), (nRight), (i * 45))
     i = i + 1
   end
+end
+
+function BetterGroupFinder:BuildCreateSearchEntriesActivitiesList()
+  for key, value in orderedPairs(ktCategoriesData) do
+    if value ~= 1 then
+      local wndParent = self.wndMain:FindChild("TabContentListLeft")
+      local wndCurrItem = Apollo.LoadForm(self.xmlDoc, "MatchSelectionParent", wndParent, self)
+      local wndCurrItemTitleText = wndCurrItem:FindChild("MatchBtn")
+      wndCurrItemTitleText:SetText(key)
+      self:BuildCreateSearchEntriesActivity(wndCurrItem, key)
+    end
+  end
+  self.wndMain:FindChild("TabContentListLeft"):ArrangeChildrenVert(0)
+end
+
+function BetterGroupFinder:BuildCreateSearchEntriesActivity(wndParent, strCategory)
+  local wndContainer = wndParent:FindChild("MatchEntries")
+  local nCount = 0
+  for key, value in orderedPairs(ktCategoriesToActivities[strCategory]) do
+    local wndCurrItem = Apollo.LoadForm(self.xmlDoc, "MatchSelection", wndContainer, self)
+    local wndCurrItemTitleText = wndCurrItem:FindChild("MatchBtn")
+    wndCurrItemTitleText:SetText(key)
+    
+    nCount = nCount + 1
+  end
+  local nLeft, nTop, nRight, nBottom = wndParent:GetAnchorOffsets()
+  wndParent:SetAnchorOffsets(nLeft, ((nCount - 1) * 45), (nRight), (nCount * 82))
+  wndContainer:ArrangeChildrenVert(0)
 end
 
 
