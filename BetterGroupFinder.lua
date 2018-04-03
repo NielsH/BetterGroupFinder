@@ -25,72 +25,91 @@ local ktTabData = {
 }
 
 local ktCategoriesData = {
-  ["Show All"] = 1,
-  ["Raids"] = 2,
-  ["Dungeons"] = 3,
-  ["Adventures"] = 4,
-  ["Expeditions"] = 5,
-  ["PvP"] = 6,
-  ["Quests and Events"] = 7,
-  ["Open World"] = 8,
-}
-
-local ktCategoriesToActivities = {
-  ["Raids"] = {
-    ["Genetic Archives"] = {
-    },
-    ["Datascape"] = {
-    },
-    ["Redmoon Terror"] = {
+  [1] = {
+    ["strName"] = "Show All",
+    ["bShowCreateSearchEntry"] = false,
+    ["ktEntries"] = {},
+    ["strIconSprite"] = "IconSprites:Icon_Mission_Scientist_SpecimenSurvey",
+  },
+  [2] = {
+    ["strName"] = "Raids",
+    ["bShowCreateSearchEntry"] = true,
+    ["strIconSprite"] = "IconSprites:Icon_Mission_Settler_Posse",
+    ["ktEntries"] = {
+      [1] = "Genetic Archives",
+      [2] = "Datascape",
+      [3] = "Redmoon Terror",
+      [4] = "Custom",
     },
   },
-  ["Dungeons"] = {
-    ["Placeholder"] = {
-    },
-    ["Placeholder 2"] = {
-    },
-  },
-  ["Adventures"] = {
-    ["Placeholder"] = {
-    },
-    ["Placeholder 2"] = {
-    },
-  },
-  ["Expeditions"] = {
-    ["Placeholder"] = {
-    },
-    ["Placeholder 2"] = {
+  [3] = {
+    ["strName"] = "Dungeons",
+    ["bShowCreateSearchEntry"] = true,
+    ["strIconSprite"] = "IconSprites:Icon_Mission_Explorer_Explorerdoor",
+    ["ktEntries"] = {
+      [1] = "Protogames Academy",
+      [2] = "Stormtalon's Lair",
+      [3] = "Ruins of Kel Voreth",
+      [4] = "Skullcano",
+      [5] = "Sanctuary of the Swordmaiden",
+      [6] = "Ultimate Protogames",
+      [7] = "Coldblood Citadel",
+      [8] = "Custom",
     },
   },
-  ["PvP"] = {
-    ["Placeholder"] = {
-    },
-    ["Placeholder 2"] = {
-    },
-  },
-  ["Quests and Events"] = {
-    ["Placeholder"] = {
-    },
-    ["Placeholder 2"] = {
-    },
-  },
-  ["Open World"] = {
-    ["Placeholder"] = {
-    },
-    ["Placeholder 2"] = {
+  [4] = {
+    ["strName"] = "Adventures",
+    ["bShowCreateSearchEntry"] = true,
+    ["strIconSprite"] = "IconSprites:Icon_Mission_Explorer_Vista",
+    ["ktEntries"] = {
+      [1] = "War of the Wilds",
+      [2] = "The Siege of Tempest Refuge",
+      [3] = "Crimelords of Whitevale",
+      [4] = "The Malgrave Trail",
+      [5] = "Bay of Betrayal",
+      [6] = "Riot in the Void",
+      [7] = "Custom",
     },
   },
-}
-
-local ktCategoriesToSprite = {
-  ["Show All"] = "IconSprites:Icon_Mission_Scientist_SpecimenSurvey",
-  ["Raids"] = "IconSprites:Icon_Mission_Settler_Posse",
-  ["Dungeons"] = "IconSprites:Icon_Mission_Explorer_Explorerdoor",
-  ["Adventures"] = "IconSprites:Icon_Mission_Explorer_Vista",
-  ["Expeditions"] = "charactercreate:sprCharC_Finalize_SkillLevel2",
-  ["PvP"] = "Contracts:sprContracts_PvP",
-  ["Quests and Events"] = "matchmaker:ContentType_Quest",
-  ["Open World"] = "CRB_InterfaceMenuList:spr_InterfaceMenuList_SilverFlagStretch",
+  [5] = {
+    ["strName"] = "Expeditions",
+    ["bShowCreateSearchEntry"] = true,
+    ["strIconSprite"] = "charactercreate:sprCharC_Finalize_SkillLevel2",
+    ["ktEntries"] = {
+      [1] = "Fragment Zero",
+      [2] = "Outpost M-13",
+      [3] = "Infestation",
+      [4] = "Evil from the Ether",
+      [5] = "Rage Logic",
+      [6] = "Space Madness",
+      [7] = "Deep Space Exploration",
+      [8] = "Gauntlet",
+      [9] = "Custom",
+    },
+  },
+  [6] = {
+    ["strName"] = "PvP",
+    ["bShowCreateSearchEntry"] = true,
+    ["strIconSprite"] = "Contracts:sprContracts_PvP",
+    ["ktEntries"] = {
+      [1] = "Walatiki Temple",
+      [2] = "Daggerstone Pass",
+      [3] = "Halls of the Bloodsworn: Reloaded",
+      [4] = "Warplot",
+      [5] = "Arena - 2v2",
+      [6] = "Arena - 3v3",
+      [7] = "Arena - 5v5",
+      [8] = "Custom",
+    },
+  },
+  [7] = {
+    ["strName"] = "Open World and Quests",
+    ["bShowCreateSearchEntry"] = true,
+    ["strIconSprite"] = "IconSprites:Icon_Mission_Explorer_ClaimTerritory",
+    ["ktEntries"] = {
+      [1] = "Custom",
+    },
+  },
 }
 
 local tMatchmakerSprites = {
@@ -402,14 +421,14 @@ function BetterGroupFinder:SelectCreateSearchEntryHeader()
 end
 
 function BetterGroupFinder:BuildCategoriesList()
-  for eCategoryType, nSortOrder in orderedPairs(ktCategoriesData) do
+  for nSortOrder, tData in pairs(ktCategoriesData) do
     local wndParent = self.wndMain:FindChild("TabContentListLeft")
     local wndCurrItem = Apollo.LoadForm(self.xmlDoc, "FilterCategoriesBase", wndParent, self)
     local wndCurrItemBtnText = wndCurrItem:FindChild("FilterCategoriesBaseBtnText")
     local wndCurrItemBtnIcon = wndCurrItem:FindChild("FilterCategoriesBaseBtnIcon")
-    wndCurrItemBtnIcon:SetSprite(ktCategoriesToSprite[eCategoryType])
-    wndCurrItemBtnText:SetText(eCategoryType)
-    wndCurrItem:SetData(eCategoryType)
+    wndCurrItemBtnIcon:SetSprite(tData["strIconSprite"])
+    wndCurrItemBtnText:SetText(tData["strName"])
+    wndCurrItem:SetData(tData["strName"])
     wndCurrItem:SetAnchorPoints(0, 0, 0, 0)
     local nLeft, nTop, nRight, nBottom = wndCurrItem:GetAnchorOffsets()
     wndCurrItem:SetAnchorOffsets(nLeft, ((nSortOrder - 1) * 60), (nRight - 8), (nSortOrder * 60))
@@ -435,29 +454,29 @@ end
 
 function BetterGroupFinder:BuildCreateSearchEntriesActivitiesList()
   for key, value in orderedPairs(ktCategoriesData) do
-    if value ~= 1 then
+    if value["bShowCreateSearchEntry"] then
       local wndParent = self.wndMain:FindChild("TabContentListLeft")
       local wndCurrItem = Apollo.LoadForm(self.xmlDoc, "MatchSelectionParent", wndParent, self)
       local wndCurrItemTitleText = wndCurrItem:FindChild("MatchBtn")
-      wndCurrItemTitleText:SetText(key)
-      self:BuildCreateSearchEntriesActivity(wndCurrItem, key)
+      wndCurrItemTitleText:SetText(value["strName"])
+      self:BuildCreateSearchEntriesActivity(wndCurrItem, value["ktEntries"])
     end
   end
   self.wndMain:FindChild("TabContentListLeft"):ArrangeChildrenVert(0)
 end
 
-function BetterGroupFinder:BuildCreateSearchEntriesActivity(wndParent, strCategory)
+function BetterGroupFinder:BuildCreateSearchEntriesActivity(wndParent, tCategories)
   local wndContainer = wndParent:FindChild("MatchEntries")
   local nCount = 0
-  for key, value in orderedPairs(ktCategoriesToActivities[strCategory]) do
+  for key, value in orderedPairs(tCategories) do
     local wndCurrItem = Apollo.LoadForm(self.xmlDoc, "MatchSelection", wndContainer, self)
     local wndCurrItemTitleText = wndCurrItem:FindChild("MatchBtn")
-    wndCurrItemTitleText:SetText(key)
+    wndCurrItemTitleText:SetText(value)
     
     nCount = nCount + 1
   end
   local nLeft, nTop, nRight, nBottom = wndParent:GetAnchorOffsets()
-  wndParent:SetAnchorOffsets(nLeft, ((nCount - 1) * 45), (nRight), (nCount * 82))
+  wndParent:SetAnchorOffsets(nLeft, ((nCount - 1) * 45), (nRight), (nCount * 85))
   wndContainer:ArrangeChildrenVert(0)
 end
 
