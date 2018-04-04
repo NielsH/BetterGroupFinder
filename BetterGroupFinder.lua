@@ -141,6 +141,20 @@ local tMatchmakerSprites = {
   "matchmaker:Matchmaker_BG_Warplots",
 }
 
+local ktMessageTypes = {
+  ["SubmitSearchEntry"] = {
+    ["nId"] = 1,
+    ["strTitle"] = 1,
+    ["bMiniLvl"] = 2,
+    ["strMiniLvl"] = 3,
+    ["bHeroism"] = 4,
+    ["strHeroism"] = 5,
+    ["strDescription"] = 6,
+    ["tCategoriesSelection"] = 7,
+  },
+}
+
+
 -----------------------------------------------------------------------------------------------
 -- Initialization
 -----------------------------------------------------------------------------------------------
@@ -459,6 +473,7 @@ function BetterGroupFinder:BuildCreateSearchEntriesActivitiesList()
       local wndCurrItem = Apollo.LoadForm(self.xmlDoc, "MatchSelectionParent", wndParent, self)
       local wndCurrItemTitleText = wndCurrItem:FindChild("MatchBtn")
       wndCurrItemTitleText:SetText(value["strName"])
+      wndCurrItemTitleText:SetData(key)
       self:BuildCreateSearchEntriesActivity(wndCurrItem, value["ktEntries"])
     end
   end
@@ -472,12 +487,56 @@ function BetterGroupFinder:BuildCreateSearchEntriesActivity(wndParent, tCategori
     local wndCurrItem = Apollo.LoadForm(self.xmlDoc, "MatchSelection", wndContainer, self)
     local wndCurrItemTitleText = wndCurrItem:FindChild("MatchBtn")
     wndCurrItemTitleText:SetText(value)
+    wndCurrItemTitleText:SetData(key)
     
     nCount = nCount + 1
   end
   local nLeft, nTop, nRight, nBottom = wndParent:GetAnchorOffsets()
   wndParent:SetAnchorOffsets(nLeft, ((nCount - 1) * 45), (nRight), (nCount * 85))
   wndContainer:ArrangeChildrenVert(0)
+end
+
+function BetterGroupFinder:OnSubmitSearchEntryBtn( wndHandler, wndControl, eMouseButton )
+  local wndSearchEntryData = self.wndMain:FindChild("TabContentRightCreateSearchEntry")
+  local strTitle = wndSearchEntryData:FindChild("TabContentRightCreateSearchEntryTitleBox"):GetText()
+  local bMiniLvl = wndSearchEntryData:FindChild("iLvlCheckbox"):IsChecked()
+  local strMiniLvl = wndSearchEntryData:FindChild("iLvlTextBox"):GetText()
+  local bHeroism = wndSearchEntryData:FindChild("HeroismCheckbox"):IsChecked()
+  local strHeroism = wndSearchEntryData:FindChild("HeroismTextBox"):GetText()
+  local strDescription = wndSearchEntryData:FindChild("DescriptionTextBox"):GetText()
+  local tCategoriesSelection = {}
+  for _, tCategory in pairs(self.wndMain:FindChild("TabContentListLeft"):GetChildren()) do
+    local nCategory = ktCategoriesData[tCategory:FindChild("MatchBtn"):GetData()]
+    for __, wndCategory in pairs(tCategory:GetChildren()) do
+      for ___, wndItem in pairs(wndCategory:GetChildren()) do
+        local nMatchData = wndItem:FindChild("MatchBtn"):GetData()
+        local bMatchSelected = wndItem:FindChild("SelectMatch"):IsChecked()
+        if bMatchSelected then
+          if not tCategoriesSelection[nCategory] then
+            tCategoriesSelection[nCategory] = {}
+          end
+          table.insert(tCategoriesSelection[nCategory], nMatchData)
+        end
+      end
+    end
+  end
+
+  local msgType = ktMessageTypes["SubmitSearchEntry"]
+  local tMsg = {
+    [msgType["nId"]] = {
+      [msgType["strTitle"]] = strTitle,
+      [msgType["bMiniLvl"]] = bMiniLvl,
+      [msgType["strMiniLvl"]] = trMiniLvl,
+      [msgType["bHeroism"]] = bHeroism,
+      [msgType["strHeroism"]] = strHeroism,
+      [msgType["strDescription"]] = strDescription,
+      [msgType["tCategoriesSelection"]] = tCategoriesSelection,
+    },
+  }
+  local sMsg = self:Serialize(tMsg)
+  SendVarToRover('sMsg', sMsg, 0)
+  self:CPrint(string.len(sMsg))
+
 end
 
 
