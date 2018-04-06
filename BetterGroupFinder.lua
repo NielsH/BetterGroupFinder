@@ -142,18 +142,24 @@ local tMatchmakerSprites = {
 }
 
 local ktMessageTypes = {
+  ["nMsgTypeId"] = 1,
   ["SubmitSearchEntry"] = {
     ["nId"] = 1,
-    ["strTitle"] = 1,
-    ["bMiniLvl"] = 2,
-    ["strMiniLvl"] = 3,
-    ["bHeroism"] = 4,
-    ["strHeroism"] = 5,
-    ["strDescription"] = 6,
-    ["tCategoriesSelection"] = 7,
+    ["nSearchEntryId"] = 2,
+    ["strTitle"] = 3,
+    ["bMiniLvl"] = 4,
+    ["strMiniLvl"] = 5,
+    ["bHeroism"] = 6,
+    ["strHeroism"] = 7,
+    ["strDescription"] = 8,
+    ["tCategoriesSelection"] = 9,
+    ["nTimeStamp"] = 10,
   },
 }
 
+local ktMsgQueue = {}
+local ktSearchEntries = {}
+local nLocalSearchEntriesCount = 0
 
 -----------------------------------------------------------------------------------------------
 -- Initialization
@@ -227,6 +233,7 @@ function BetterGroupFinder:OnBetterGroupFinderOn()
   for _, btn in pairs(self.wndHeaderButtons) do
     if not bHeaderIsSelected and btn:IsChecked() then
       bHeaderIsSelected = true
+      self:OnHeaderBtnCheck(btn, nil, nil)
     end
   end
   if not bHeaderIsSelected then
@@ -450,20 +457,25 @@ function BetterGroupFinder:BuildCategoriesList()
 end
 
 function BetterGroupFinder:BuildActivitiesList()
+  local wndParent = self.wndMain:FindChild("TabContentRightTopListOfSeekers")
+  wndParent:DestroyChildren()
   local i = 1
-  while i < 20 do
-    local wndParent = self.wndMain:FindChild("TabContentRightTopListOfSeekers")
-    local wndCurrItem = Apollo.LoadForm(self.xmlDoc, "TabContentRightGridItemBase", wndParent, self)
-    local wndCurrItemTitleText = wndCurrItem:FindChild("TabContentRightItemBaseBtnTitle")
-    local wndCurrItemGroupStatusText = wndCurrItem:FindChild("TabContentRightItemBaseBtnGroupStatusText")
-    local wndCurrItemBtn = wndCurrItem:FindChild("TabContentRightItemBaseBtn")
-    wndCurrItemTitleText:SetText("title iter - " .. i)
-    wndCurrItemGroupStatusText:SetText(i .. "/∞")
-    wndCurrItemBtn:SetTooltip("Looking for awesome players to pew pew! - iter " .. i)
-    local nLeft, nTop, nRight, nBottom = wndCurrItem:GetAnchorOffsets()
-    wndCurrItem:SetAnchorOffsets(nLeft, ((i - 1) * 45), (nRight), (i * 45))
-    i = i + 1
+  for k, v in pairs(ktSearchEntries) do
+    if v[ktMessageTypes["nMsgTypeId"]] == ktMessageTypes["SubmitSearchEntry"]["nId"] then
+      local wndCurrItem = Apollo.LoadForm(self.xmlDoc, "TabContentRightGridItemBase", wndParent, self)
+      local wndCurrItemTitleText = wndCurrItem:FindChild("TabContentRightItemBaseBtnTitle")
+      local wndCurrItemGroupStatusText = wndCurrItem:FindChild("TabContentRightItemBaseBtnGroupStatusText")
+      local wndCurrItemBtn = wndCurrItem:FindChild("TabContentRightItemBaseBtn")
+      wndCurrItemTitleText:SetText(v[ktMessageTypes["SubmitSearchEntry"]["strTitle"]])
+      wndCurrItemGroupStatusText:SetText("n/a")
+      wndCurrItemBtn:SetTooltip(v[ktMessageTypes["SubmitSearchEntry"]["strDescription"]])
+      wndCurrItem:SetData(v[ktMessageTypes["SubmitSearchEntry"]["nSearchEntryId"]])
+      local nLeft, nTop, nRight, nBottom = wndCurrItem:GetAnchorOffsets()
+      wndCurrItem:SetAnchorOffsets(nLeft, ((i - 1) * 45), (nRight), (i * 45))
+      i = i + 1
+    end
   end
+  SendVarToRover("ktSearchEntries", ktSearchEntries, 0)
 end
 
 function BetterGroupFinder:BuildCreateSearchEntriesActivitiesList()
@@ -506,7 +518,7 @@ function BetterGroupFinder:OnSubmitSearchEntryBtn( wndHandler, wndControl, eMous
   local strDescription = wndSearchEntryData:FindChild("DescriptionTextBox"):GetText()
   local tCategoriesSelection = {}
   for _, tCategory in pairs(self.wndMain:FindChild("TabContentListLeft"):GetChildren()) do
-    local nCategory = ktCategoriesData[tCategory:FindChild("MatchBtn"):GetData()]
+    local nCategory = tCategory:FindChild("MatchBtn"):GetData()
     for __, wndCategory in pairs(tCategory:GetChildren()) do
       for ___, wndItem in pairs(wndCategory:GetChildren()) do
         local nMatchData = wndItem:FindChild("MatchBtn"):GetData()
@@ -522,20 +534,20 @@ function BetterGroupFinder:OnSubmitSearchEntryBtn( wndHandler, wndControl, eMous
   end
 
   local msgType = ktMessageTypes["SubmitSearchEntry"]
-  local tMsg = {
-    [msgType["nId"]] = {
-      [msgType["strTitle"]] = strTitle,
-      [msgType["bMiniLvl"]] = bMiniLvl,
-      [msgType["strMiniLvl"]] = trMiniLvl,
-      [msgType["bHeroism"]] = bHeroism,
-      [msgType["strHeroism"]] = strHeroism,
-      [msgType["strDescription"]] = strDescription,
-      [msgType["tCategoriesSelection"]] = tCategoriesSelection,
-    },
+  local ktSearchEntry = {
+    [ktMessageTypes["nMsgTypeId"]] = msgType["nId"],
+    [msgType["strTitle"]] = strTitle,
+    [msgType["bMiniLvl"]] = bMiniLvl,
+    [msgType["strMiniLvl"]] = strMiniLvl,
+    [msgType["bHeroism"]] = bHeroism,
+    [msgType["strHeroism"]] = strHeroism,
+    [msgType["strDescription"]] = strDescription,
+    [msgType["tCategoriesSelection"]] = tCategoriesSelection,
+    [msgType["nSearchEntryId"]] = GameLib.GetPlayerCharacterName() .. "|" .. (nLocalSearchEntriesCount + 1),
+    [msgType["nTimeStamp"]] = os.time(),
   }
-  local sMsg = self:Serialize(tMsg)
-  SendVarToRover('sMsg', sMsg, 0)
-  self:CPrint(string.len(sMsg))
+  nLocalSearchEntriesCount = nLocalSearchEntriesCount + 1
+  table.insert(ktSearchEntries, ktSearchEntry)
 
 end
 
