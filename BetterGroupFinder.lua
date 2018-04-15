@@ -462,6 +462,25 @@ function BetterGroupFinder:EnumDestinations(tDestinations)
   return t
 end
 
+function BetterGroupFinder:FilterSearchEntriesByCategory(nCategory)
+  -- 1 is "Show all" which is a special category that requires no filtering
+  if nCategory == 1 then
+    return ktSearchEntries
+  end
+  local ktSearchEntriesFiltered = {}
+  for k, v in pairs(ktSearchEntries) do
+    if v[ktMessageTypes["nMsgTypeId"]] == ktMessageTypes["SearchEntry"]["nId"] then
+      local tCategories = v[ktMessageTypes["SearchEntry"]["tCategoriesSelection"]]
+      for nCurrCategory, tCurrCategoryData in pairs(tCategories) do
+        if not ktSearchEntriesFiltered[k] and nCurrCategory == nCategory then
+          ktSearchEntriesFiltered[k] = v
+        end
+      end
+    end
+  end
+  return ktSearchEntriesFiltered
+end
+
 function BetterGroupFinder:Decode(str)
   if type(str) ~= "string" then
     return nil
@@ -561,6 +580,7 @@ function BetterGroupFinder:SelectListOfSeekersHeader()
   self.wndMain:FindChild("CreateSearchEntryControlContainer"):Show(false)
   self.wndMain:FindChild("TabContentRightCreateSearchEntry"):Show(false)
   self.wndMain:FindChild("TabContentRight"):SetSprite("")
+  self.wndMain:FindChild("TabContentRight"):FindChild("RefreshListOfSeekersBtn"):Show(true)
   self:BuildCategoriesList()
   self:BuildActivitiesList(ktSearchEntries)
 end
@@ -573,6 +593,7 @@ function BetterGroupFinder:SelectCreateSearchEntryHeader()
   self.wndMain:FindChild("FilterSettings"):Show(false)
   self.wndMain:FindChild("CreateSearchEntryControlContainer"):Show(true)
   self.wndMain:FindChild("TabContentRightCreateSearchEntry"):Show(true)
+  self.wndMain:FindChild("TabContentRight"):FindChild("RefreshListOfSeekersBtn"):Show(false)
   self.wndMain:FindChild("TabContentRight"):SetSprite(tMatchmakerSprites[math.random(#tMatchmakerSprites)])
   self:BuildCreateSearchEntriesActivitiesList()
 end
@@ -585,6 +606,10 @@ function BetterGroupFinder:BuildCategoriesList()
     local wndCurrItemBtnText = wndCurrItem:FindChild("FilterCategoriesBaseBtnText")
     local wndCurrItemBtnIcon = wndCurrItem:FindChild("FilterCategoriesBaseBtnIcon")
     wndCurrItemBtn:SetData(nSortOrder)
+    if nSortOrder == 1 then
+      wndCurrItemBtn:SetCheck(true)
+      self.wndMain:FindChild("TabContentRight"):FindChild("RefreshListOfSeekersBtn"):SetData(nSortOrder)
+    end
     wndCurrItemBtnIcon:SetSprite(tData["strIconSprite"])
     wndCurrItemBtnText:SetText(tData["strName"])
     wndCurrItem:SetData(tData["strName"])
@@ -709,23 +734,14 @@ end
 
 function BetterGroupFinder:OnSelectFilterCategoriesBaseBtn( wndHandler, wndControl, eMouseButton )
   local nCategory = wndControl:GetData()
-  -- 1 is "Show all" which is a special category that requires no filtering
-  if nCategory ~= 1 then
-    local ktSearchEntriesFiltered = {}
-    for k, v in pairs(ktSearchEntries) do
-      if v[ktMessageTypes["nMsgTypeId"]] == ktMessageTypes["SearchEntry"]["nId"] then
-        local tCategories = v[ktMessageTypes["SearchEntry"]["tCategoriesSelection"]]
-        for nCurrCategory, tCurrCategoryData in pairs(tCategories) do
-          if not ktSearchEntriesFiltered[k] and nCurrCategory == nCategory then
-            ktSearchEntriesFiltered[k] = v
-          end
-        end
-      end
-    end
-    self:BuildActivitiesList(ktSearchEntriesFiltered)
-  else
-    self:BuildActivitiesList(ktSearchEntries)
-  end
+  self.wndMain:FindChild("TabContentRight"):FindChild("RefreshListOfSeekersBtn"):SetData(nCategory)
+  local ktSearchEntriesFiltered = self:FilterSearchEntriesByCategory(nCategory)
+  self:BuildActivitiesList(ktSearchEntriesFiltered)
+end
+
+function BetterGroupFinder:OnRefreshListOfSeekersBtn( wndHandler, wndControl, eMouseButton )
+  local ktSearchEntriesFiltered = self:FilterSearchEntriesByCategory(wndControl:GetData())
+  self:BuildActivitiesList(ktSearchEntriesFiltered)
 end
 
 -----------------------------------------------------------------------------------------------
