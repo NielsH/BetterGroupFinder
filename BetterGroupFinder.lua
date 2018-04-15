@@ -562,7 +562,7 @@ function BetterGroupFinder:SelectListOfSeekersHeader()
   self.wndMain:FindChild("TabContentRightCreateSearchEntry"):Show(false)
   self.wndMain:FindChild("TabContentRight"):SetSprite("")
   self:BuildCategoriesList()
-  self:BuildActivitiesList()
+  self:BuildActivitiesList(ktSearchEntries)
 end
 
 function BetterGroupFinder:SelectCreateSearchEntryHeader()
@@ -581,8 +581,10 @@ function BetterGroupFinder:BuildCategoriesList()
   for nSortOrder, tData in pairs(ktCategoriesData) do
     local wndParent = self.wndMain:FindChild("TabContentListLeft")
     local wndCurrItem = Apollo.LoadForm(self.xmlDoc, "FilterCategoriesBase", wndParent, self)
+    local wndCurrItemBtn = wndCurrItem:FindChild("FilterCategoriesBaseBtn")
     local wndCurrItemBtnText = wndCurrItem:FindChild("FilterCategoriesBaseBtnText")
     local wndCurrItemBtnIcon = wndCurrItem:FindChild("FilterCategoriesBaseBtnIcon")
+    wndCurrItemBtn:SetData(nSortOrder)
     wndCurrItemBtnIcon:SetSprite(tData["strIconSprite"])
     wndCurrItemBtnText:SetText(tData["strName"])
     wndCurrItem:SetData(tData["strName"])
@@ -592,7 +594,7 @@ function BetterGroupFinder:BuildCategoriesList()
   end
 end
 
-function BetterGroupFinder:BuildActivitiesList()
+function BetterGroupFinder:BuildActivitiesList(ktSearchEntries)
   local wndParent = self.wndMain:FindChild("TabContentRightTopListOfSeekers")
   wndParent:DestroyChildren()
   local i = 1
@@ -703,6 +705,27 @@ function BetterGroupFinder:OnRequestInviteBtn( wndHandler, wndControl, eMouseBut
   local strSearchEntryId = wndControl:GetData()
   local strCharacterName, nListingCount = strSearchEntryId:match("([^|]+)|([^|]+)")
   GroupLib.Join(strCharacterName)
+end
+
+function BetterGroupFinder:OnSelectFilterCategoriesBaseBtn( wndHandler, wndControl, eMouseButton )
+  local nCategory = wndControl:GetData()
+  -- 1 is "Show all" which is a special category that requires no filtering
+  if nCategory ~= 1 then
+    local ktSearchEntriesFiltered = {}
+    for k, v in pairs(ktSearchEntries) do
+      if v[ktMessageTypes["nMsgTypeId"]] == ktMessageTypes["SearchEntry"]["nId"] then
+        local tCategories = v[ktMessageTypes["SearchEntry"]["tCategoriesSelection"]]
+        for nCurrCategory, tCurrCategoryData in pairs(tCategories) do
+          if not ktSearchEntriesFiltered[k] and nCurrCategory == nCategory then
+            ktSearchEntriesFiltered[k] = v
+          end
+        end
+      end
+    end
+    self:BuildActivitiesList(ktSearchEntriesFiltered)
+  else
+    self:BuildActivitiesList(ktSearchEntries)
+  end
 end
 
 -----------------------------------------------------------------------------------------------
