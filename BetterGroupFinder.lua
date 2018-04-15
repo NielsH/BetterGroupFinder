@@ -143,23 +143,37 @@ local tMatchmakerSprites = {
 
 local ktMessageTypes = {
   ["nMsgTypeId"] = 1,
-  ["SubmitSearchEntry"] = {
-    ["nId"] = 1,
-    ["nSearchEntryId"] = 2,
-    ["strTitle"] = 3,
-    ["bMiniLvl"] = 4,
-    ["strMiniLvl"] = 5,
-    ["bHeroism"] = 6,
-    ["strHeroism"] = 7,
-    ["strDescription"] = 8,
-    ["tCategoriesSelection"] = 9,
-    ["nTimeStamp"] = 10,
+  -- make sure not to repeat the above value as another value below
+  ["SearchEntry"] = {
+    ["nId"] = 2,
+    ["strSearchEntryId"] = 3,
+    ["strTitle"] = 4,
+    ["bMiniLvl"] = 5,
+    ["strMiniLvl"] = 6,
+    ["bHeroism"] = 7,
+    ["strHeroism"] = 8,
+    ["strDescription"] = 9,
+    ["tCategoriesSelection"] = 10,
+    ["nTimeStamp"] = 11,
+    ["nMemberCount"] = 12,
+  },
+  ["SplittedMsg"] = {
+    ["nId"] = 3,
+    ["nCurrItem"] = 2,
+    ["nTotalItems"] = 4,
+    ["strItemData"] = 5,
+    ["strItemId"] = 6,
   },
 }
 
 local ktMsgQueue = {}
+local ktMsgQueueTimestamps = {}
 local ktSearchEntries = {}
+local ktSplittedMsgReceived = {}
+local bICCommThrottled = false
 local nLocalSearchEntriesCount = 0
+local nCreateListingsMsgQueueTimerInterval = 5
+local nProcessMsgQueueTimerInterval = 10
 
 -----------------------------------------------------------------------------------------------
 -- Initialization
@@ -183,6 +197,49 @@ function BetterGroupFinder:Init()
     Apollo.RegisterAddon(self, bHasConfigureFunction, strConfigureButtonText, tDependencies)
 end
  
+local function __genOrderedIndex( t )
+  local orderedIndex = {}
+  for key in pairs(t) do
+    table.insert( orderedIndex, key )
+  end
+  table.sort( orderedIndex )
+  return orderedIndex
+end
+
+local function orderedNext(t, state)
+  -- Equivalent of the next function, but returns the keys in the alphabetic
+  -- order. We use a temporary ordered key table that is stored in the
+  -- table being iterated.
+
+  local key = nil
+  --print("orderedNext: state = "..tostring(state) )
+  if state == nil then
+    -- the first time, generate the index
+    t.__orderedIndex = __genOrderedIndex( t )
+    key = t.__orderedIndex[1]
+  else
+    -- fetch the next value
+    for i = 1,table.getn(t.__orderedIndex) do
+      if t.__orderedIndex[i] == state then
+        key = t.__orderedIndex[i+1]
+      end
+    end
+  end
+
+  if key then
+    return key, t[key]
+  end
+
+  -- no more value to return, cleanup
+  t.__orderedIndex = nil
+  return
+end
+
+local function orderedPairs(t)
+  -- Equivalent of the pairs() function on tables. Allows to iterate
+  -- in order
+  return orderedNext, t, nil
+end
 
 -----------------------------------------------------------------------------------------------
 -- BetterGroupFinder OnLoad
@@ -210,6 +267,7 @@ function BetterGroupFinder:OnDocLoaded()
     -- Register handlers for events, slash commands and timer, etc.
     -- e.g. Apollo.RegisterEventHandler("KeyDown", "OnKeyDown", self)
     Apollo.RegisterSlashCommand("bgf", "OnBetterGroupFinderOn", self)
+    self.json = Apollo.GetPackage("Lib:dkJSON-2.5").tPackage
 
     -- Do additional Addon initialization here
     self.timerjoinICCommChannel = ApolloTimer.Create(5, false, "JoinICCommChannel", self)
@@ -241,47 +299,167 @@ function BetterGroupFinder:OnBetterGroupFinderOn()
   end
 end
 
-function BetterGroupFinder:SendMessage()
-  local tMessage = {
-    testkey1 = "testvalue1",
-    testkey2 = "testvalue2",
-  }
-  self.channel:SendMessage(self:Serialize(tMessage))
+function BetterGroupFinder:SplitStringByChunk(text, chunkSize)
+  local s = {}
+  for i=1, #text, chunkSize do
+    s[#s+1] = text:sub(i,i+chunkSize - 1)
+  end
+  return s
+end
+
+function BetterGroupFinder:CreateListingsMsgQueue()
+  for k, v in pairs(ktSearchEntries) do
+    local ktSearchEntryData = ktMessageTypes["SearchEntry"]
+    local strSearchEntryId = v[ktSearchEntryData["strSearchEntryId"]]
+    local strCharacterName, nListingCount = strSearchEntryId:match("([^|]+)|([^|]+)")
+    if GameLib.GetPlayerCharacterName() == strCharacterName then
+      if not ktMsgQueue[strSearchEntryId] then
+        ktMsgQueue[strSearchEntryId] = {}
+        v[ktSearchEntryData["nMemberCount"]] = (GroupLib.GetMemberCount() == 0 and 1) or GroupLib.GetMemberCount()
+        local sMsgFull = self.json.encode(v, {"keyorder"})
+        local tMsgSplitted = self:SplitStringByChunk(sMsgFull, 25)
+        local nMsgSplittedCount = #tMsgSplitted
+        for nCount, item in orderedPairs(tMsgSplitted) do
+          local t = {
+            [ktMessageTypes["nMsgTypeId"]] = ktMessageTypes["SplittedMsg"]["nId"],
+            [ktMessageTypes["SplittedMsg"]["nCurrItem"]] = nCount,
+            [ktMessageTypes["SplittedMsg"]["nTotalItems"]] = nMsgSplittedCount,
+            [ktMessageTypes["SplittedMsg"]["strItemData"]] = item,
+            [ktMessageTypes["SplittedMsg"]["strItemId"]] = strSearchEntryId,
+          }
+          ktMsgQueue[strSearchEntryId][nCount] = t
+        end
+      end
+    end
+  end
+end
+
+function BetterGroupFinder:ProcessMsgQueue()
+  k, v = next(ktMsgQueue)
+  if k and v then
+    item, value = next(v)
+    if item and value then
+      self:SendMessage(value)
+      ktMsgQueue[k][item] = nil
+    else
+      -- we've processed all items in the queue for this message
+      ktMsgQueue[k] = nil
+    end
+  end
+end
+
+function BetterGroupFinder:DisableICCommSelfThrottle()
+  bICCommThrottled = false
+end
+
+function BetterGroupFinder:EnableICCommSelfThrottle()
+  if not bICCommThrottled then
+    self:CPrint("Better Group Finder - warning: it's taking a long time for our messages to be sent. We are probably being throttled by the game which prevents the addon from working correctly. Attempting to auto-resolve by stopping sending out messages for a few minutes. If this issue persists try relogging.")
+    bICCommThrottled = true
+  end
+  -- override existing timer if it exists so we have >120 sec of no delayed messages
+  self.timerDisableThrottledStatus = ApolloTimer.Create(120, false, "DisableICCommSelfThrottle", self)
+end
+
+function BetterGroupFinder:DetectICCommThrottled()
+  local currTime = os.time()
+  local nSlowICCommMsgs = 0
+  for k, v in pairs(ktMsgQueueTimestamps) do
+    if currTime - v > nProcessMsgQueueTimerInterval then
+      nSlowICCommMsgs = nSlowICCommMsgs + 1
+      if nSlowICCommMsgs > 10 then
+        -- we're not able to process the queue fast enough. Carbine throttled us, we should stop and wait.
+        self:EnableICCommSelfThrottle()
+      end
+    end
+  end
+end
+
+function BetterGroupFinder:AssembleICCommMessage(tMsgParts)
+  local strMessageCombined = table.concat(tMsgParts)
+  return self.json.decode(strMessageCombined, 1, null, nil)
+end
+
+function BetterGroupFinder:SendMessage(tMessage)
+  if not bICCommThrottled then
+    local nICCommMsgId = self.channel:SendMessage(self.json.encode(tMessage, {"keyorder"}))
+    ktMsgQueueTimestamps[nICCommMsgId] = os.time()
+  end
 end
 
 function BetterGroupFinder:OnICCommMessageReceived(channel, strMessage, idMessage)
-  local message = self:Decode(strMessage)
+  local message = self.json.decode(strMessage)
   if type(message) ~= "table" then
       return
   end
-  self:CPrint(idMessage .. " - " .. strMessage)
-  rover = Apollo.GetAddon("Rover")
-  rover:AddWatch("msg", self:Deserialize(strMessage), 0)
+
+  if message[ktMessageTypes["nMsgTypeId"]] == ktMessageTypes["SplittedMsg"]["nId"] then
+    self:ProcessSplittedMsgReceived(message)
+  end
+end
+
+function BetterGroupFinder:ProcessSplittedMsgReceived(message)
+  local strItemId = message[ktMessageTypes["SplittedMsg"]["strItemId"]]
+  local nCurrItem = message[ktMessageTypes["SplittedMsg"]["nCurrItem"]]
+  local nTotalItems = message[ktMessageTypes["SplittedMsg"]["nTotalItems"]]
+  local strItemData = message[ktMessageTypes["SplittedMsg"]["strItemData"]]
+  if not ktSplittedMsgReceived[strItemId] then
+    ktSplittedMsgReceived[strItemId] = {}
+  end
+  ktSplittedMsgReceived[strItemId][nCurrItem] = strItemData
+  -- #table is not reliable, we need to count
+  local nItemsCount = 0
+  for _ in pairs(ktSplittedMsgReceived[strItemId]) do
+    nItemsCount = nItemsCount + 1
+  end
+  if nItemsCount == nTotalItems then
+    local ktFullMessageReceived = self:AssembleICCommMessage(ktSplittedMsgReceived[strItemId])
+    if ktFullMessageReceived[ktMessageTypes["nMsgTypeId"]] == ktMessageTypes["SearchEntry"]["nId"] then
+      ktSearchEntries[ktFullMessageReceived[ktMessageTypes["SearchEntry"]["strSearchEntryId"]]] = ktFullMessageReceived
+      ktSplittedMsgReceived[strItemId] = nil
+    end
+  end
 end
 
 function BetterGroupFinder:OnICCommSendMessageResult(iccomm, eResult, idMessage)
-  self:CPrint("DEBUG - OnICCommSendMessageResult")
+  if not ktMsgQueueTimestamps[idMessage] or (os.time() - ktMsgQueueTimestamps[idMessage] > 5) then
+    -- We're probably being throttled; we received the message result after more than 5 seconds
+    -- or we don't even have the message id in our list, indicating it may have been received after a reloadui
+    self:EnableICCommSelfThrottle()
+  end
+  ktMsgQueueTimestamps[idMessage] = nil
 end
 
 function BetterGroupFinder:OnICCommThrottled(iccomm, strSender, idMessage)
-  self:CPrint("DEBUG - OnICCommThrottled")
 end
 
 function BetterGroupFinder:JoinICCommChannel()
-  self:CPrint("debug 1")
   self.timerJoinICCommChannel = nil
 
   self.channel = ICCommLib.JoinChannel("BetterGroupFinder", ICCommLib.CodeEnumICCommChannelType.Global)
   if not self.channel:IsReady() then
-      self:CPrint("debug 2")
       self.timerJoinICCommChannel = ApolloTimer.Create(3, false, "JoinICCommChannel", self)
   else
-      self:CPrint("debug 3")
-      self.timerJoinICCommChannel = ApolloTimer.Create(3, false, "SendMessage", self)
+      self.timerJoinICCommChannel = nil
+      self.channel:SetThrottledFunction("OnICCommThrottled", self)
       self.channel:SetReceivedMessageFunction("OnICCommMessageReceived", self)
       self.channel:SetSendMessageResultFunction("OnICCommSendMessageResult", self)
-      self.channel:SetThrottledFunction("OnICCommThrottled", self)
+      self.timerCreateListingsMsgQueue = ApolloTimer.Create(nCreateListingsMsgQueueTimerInterval, true, "CreateListingsMsgQueue", self)
+      self.timerProcessMsgQueue = ApolloTimer.Create(nProcessMsgQueueTimerInterval, true, "ProcessMsgQueue", self)
+      self.timerDetectICCommThrottled = ApolloTimer.Create(nProcessMsgQueueTimerInterval, true, "DetectICCommThrottled", self)
   end
+end
+
+function BetterGroupFinder:EnumDestinations(tDestinations)
+  local t = {}
+  for k, v in pairs(tDestinations) do
+    for item, value in pairs(v) do
+      if ktCategoriesData[k]["ktEntries"][value] ~= "Custom" then
+        table.insert(t, ktCategoriesData[k]["ktEntries"][value])
+      end
+    end
+  end
+  return t
 end
 
 function BetterGroupFinder:Decode(str)
@@ -335,49 +513,6 @@ function BetterGroupFinder:CPrint(str)
   ChatSystemLib.PostOnChannel(ChatSystemLib.ChatChannel_Command, str, "")
 end
 
-local function __genOrderedIndex( t )
-  local orderedIndex = {}
-  for key in pairs(t) do
-    table.insert( orderedIndex, key )
-  end
-  table.sort( orderedIndex )
-  return orderedIndex
-end
-
-local function orderedNext(t, state)
-  -- Equivalent of the next function, but returns the keys in the alphabetic
-  -- order. We use a temporary ordered key table that is stored in the
-  -- table being iterated.
-
-  local key = nil
-  --print("orderedNext: state = "..tostring(state) )
-  if state == nil then
-    -- the first time, generate the index
-    t.__orderedIndex = __genOrderedIndex( t )
-    key = t.__orderedIndex[1]
-  else
-    -- fetch the next value
-    for i = 1,table.getn(t.__orderedIndex) do
-      if t.__orderedIndex[i] == state then
-        key = t.__orderedIndex[i+1]
-      end
-    end
-  end
-
-  if key then
-    return key, t[key]
-  end
-
-  -- no more value to return, cleanup
-  t.__orderedIndex = nil
-  return
-end
-
-local function orderedPairs(t)
-  -- Equivalent of the pairs() function on tables. Allows to iterate
-  -- in order
-  return orderedNext, t, nil
-end
 -----------------------------------------------------------------------------------------------
 -- BetterGroupFinderForm Functions
 -----------------------------------------------------------------------------------------------
@@ -419,6 +554,7 @@ function BetterGroupFinder:SelectListOfSeekersHeader()
   self.wndMain:FindChild("CreateSearchEntryBtn"):SetCheck(false)
   self.wndMain:FindChild("TabContentRightTopListOfSeekers"):Show(true)
   self.wndMain:FindChild("TabContentRightBottomListOfSeekers"):Show(true)
+  self.wndMain:FindChild("TabContentRightBottomListOfSeekers"):SetSprite(tMatchmakerSprites[math.random(#tMatchmakerSprites)])
   self.wndMain:FindChild("TabContentListLeft"):DestroyChildren()
   self.wndMain:FindChild("TabContentListLeft"):SetAnchorOffsets(0, 64, 0, 0)
   self.wndMain:FindChild("FilterSettings"):Show(true)
@@ -461,21 +597,21 @@ function BetterGroupFinder:BuildActivitiesList()
   wndParent:DestroyChildren()
   local i = 1
   for k, v in pairs(ktSearchEntries) do
-    if v[ktMessageTypes["nMsgTypeId"]] == ktMessageTypes["SubmitSearchEntry"]["nId"] then
+    if v[ktMessageTypes["nMsgTypeId"]] == ktMessageTypes["SearchEntry"]["nId"] then
       local wndCurrItem = Apollo.LoadForm(self.xmlDoc, "TabContentRightGridItemBase", wndParent, self)
       local wndCurrItemTitleText = wndCurrItem:FindChild("TabContentRightItemBaseBtnTitle")
       local wndCurrItemGroupStatusText = wndCurrItem:FindChild("TabContentRightItemBaseBtnGroupStatusText")
       local wndCurrItemBtn = wndCurrItem:FindChild("TabContentRightItemBaseBtn")
-      wndCurrItemTitleText:SetText(v[ktMessageTypes["SubmitSearchEntry"]["strTitle"]])
-      wndCurrItemGroupStatusText:SetText("n/a")
-      wndCurrItemBtn:SetTooltip(v[ktMessageTypes["SubmitSearchEntry"]["strDescription"]])
-      wndCurrItem:SetData(v[ktMessageTypes["SubmitSearchEntry"]["nSearchEntryId"]])
+      wndCurrItemTitleText:SetText(v[ktMessageTypes["SearchEntry"]["strTitle"]])
+      wndCurrItemGroupStatusText:SetText(v[ktMessageTypes["SearchEntry"]["nMemberCount"]])
+      wndCurrItemBtn:SetTooltip(v[ktMessageTypes["SearchEntry"]["strDescription"]])
+      wndCurrItem:SetData(v[ktMessageTypes["SearchEntry"]["strSearchEntryId"]])
+      wndCurrItemBtn:SetData(v[ktMessageTypes["SearchEntry"]["strSearchEntryId"]])
       local nLeft, nTop, nRight, nBottom = wndCurrItem:GetAnchorOffsets()
       wndCurrItem:SetAnchorOffsets(nLeft, ((i - 1) * 45), (nRight), (i * 45))
       i = i + 1
     end
   end
-  SendVarToRover("ktSearchEntries", ktSearchEntries, 0)
 end
 
 function BetterGroupFinder:BuildCreateSearchEntriesActivitiesList()
@@ -533,7 +669,7 @@ function BetterGroupFinder:OnSubmitSearchEntryBtn( wndHandler, wndControl, eMous
     end
   end
 
-  local msgType = ktMessageTypes["SubmitSearchEntry"]
+  local msgType = ktMessageTypes["SearchEntry"]
   local ktSearchEntry = {
     [ktMessageTypes["nMsgTypeId"]] = msgType["nId"],
     [msgType["strTitle"]] = strTitle,
@@ -543,14 +679,26 @@ function BetterGroupFinder:OnSubmitSearchEntryBtn( wndHandler, wndControl, eMous
     [msgType["strHeroism"]] = strHeroism,
     [msgType["strDescription"]] = strDescription,
     [msgType["tCategoriesSelection"]] = tCategoriesSelection,
-    [msgType["nSearchEntryId"]] = GameLib.GetPlayerCharacterName() .. "|" .. (nLocalSearchEntriesCount + 1),
+    [msgType["strSearchEntryId"]] = GameLib.GetPlayerCharacterName() .. "|" .. (nLocalSearchEntriesCount + 1),
     [msgType["nTimeStamp"]] = os.time(),
+    [msgType["nMemberCount"]] = (GroupLib.GetMemberCount() == 0 and 1) or GroupLib.GetMemberCount()
   }
   nLocalSearchEntriesCount = nLocalSearchEntriesCount + 1
-  table.insert(ktSearchEntries, ktSearchEntry)
-
+  ktSearchEntries[ktSearchEntry[msgType["strSearchEntryId"]]] = ktSearchEntry
 end
 
+function BetterGroupFinder:OnSearchEntryListBtnCheck( wndHandler, wndControl, eMouseButton )
+  local ktSearchEntryData = ktSearchEntries[wndControl:GetData()]
+  local msgType = ktMessageTypes["SearchEntry"]
+  local wndContainer = self.wndMain:FindChild("TabContentRightBottomListOfSeekers"):FindChild("TextContainer")
+  local wndTitle = wndContainer:FindChild("Title"):SetText(ktSearchEntryData[msgType["strTitle"]])
+  local wndDescription = wndContainer:FindChild("Description"):SetText(ktSearchEntryData[msgType["strDescription"]])
+  local strDestinations = table.concat(self:EnumDestinations(ktSearchEntryData[msgType["tCategoriesSelection"]]), ",")
+  local wndDestination = wndContainer:FindChild("DestinationLabel"):FindChild("DestinationLabelText"):SetText(strDestinations)
+end
+
+function BetterGroupFinder:OnRequestInviteBtn( wndHandler, wndControl, eMouseButton )
+end
 
 -----------------------------------------------------------------------------------------------
 -- BetterGroupFinder Instance

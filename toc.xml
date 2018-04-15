@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Addon Author="KamiNuvini" APIVersion="16" Name="BetterGroupFinder" Description="">
+    <Script Name="Libs/LibJSON/LibJSON-2.5.lua"/>
     <Script Name="BetterGroupFinder.lua"/>
     <Form Name="BetterGroupFinder.xml"/>
 </Addon>
