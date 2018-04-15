@@ -712,6 +712,7 @@ function BetterGroupFinder:OnSubmitSearchEntryBtn( wndHandler, wndControl, eMous
   }
   nLocalSearchEntriesCount = nLocalSearchEntriesCount + 1
   ktSearchEntries[ktSearchEntry[msgType["strSearchEntryId"]]] = ktSearchEntry
+  self:SelectListOfSeekersHeader()
 end
 
 function BetterGroupFinder:OnSearchEntryListBtnCheck( wndHandler, wndControl, eMouseButton )
