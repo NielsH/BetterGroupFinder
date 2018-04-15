@@ -691,13 +691,18 @@ function BetterGroupFinder:OnSearchEntryListBtnCheck( wndHandler, wndControl, eM
   local ktSearchEntryData = ktSearchEntries[wndControl:GetData()]
   local msgType = ktMessageTypes["SearchEntry"]
   local wndContainer = self.wndMain:FindChild("TabContentRightBottomListOfSeekers"):FindChild("TextContainer")
-  local wndTitle = wndContainer:FindChild("Title"):SetText(ktSearchEntryData[msgType["strTitle"]])
-  local wndDescription = wndContainer:FindChild("Description"):SetText(ktSearchEntryData[msgType["strDescription"]])
+  local wndButtonsContainer = self.wndMain:FindChild("TabContentRightBottomListOfSeekers"):FindChild("ButtonsContainer") 
+  wndContainer:FindChild("Title"):SetText(ktSearchEntryData[msgType["strTitle"]])
+  wndContainer:FindChild("Description"):SetText(ktSearchEntryData[msgType["strDescription"]])
   local strDestinations = table.concat(self:EnumDestinations(ktSearchEntryData[msgType["tCategoriesSelection"]]), ",")
-  local wndDestination = wndContainer:FindChild("DestinationLabel"):FindChild("DestinationLabelText"):SetText(strDestinations)
+  wndContainer:FindChild("DestinationLabel"):FindChild("DestinationLabelText"):SetText(strDestinations)
+  wndButtonsContainer:FindChild("RequestInviteBtn"):SetData(ktSearchEntryData[msgType["strSearchEntryId"]])
 end
 
 function BetterGroupFinder:OnRequestInviteBtn( wndHandler, wndControl, eMouseButton )
+  local strSearchEntryId = wndControl:GetData()
+  local strCharacterName, nListingCount = strSearchEntryId:match("([^|]+)|([^|]+)")
+  GroupLib.Join(strCharacterName)
 end
 
 -----------------------------------------------------------------------------------------------
