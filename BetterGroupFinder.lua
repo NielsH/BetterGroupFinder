@@ -588,7 +588,7 @@ function BetterGroupFinder:BuildCategoriesList()
     wndCurrItem:SetData(tData["strName"])
     wndCurrItem:SetAnchorPoints(0, 0, 0, 0)
     local nLeft, nTop, nRight, nBottom = wndCurrItem:GetAnchorOffsets()
-    wndCurrItem:SetAnchorOffsets(nLeft, ((nSortOrder - 1) * 60), (nRight - 8), (nSortOrder * 60))
+    wndCurrItem:SetAnchorOffsets(nLeft, ((nSortOrder - 1) * 57), (nRight - 8), (nSortOrder * 57))
   end
 end
 
