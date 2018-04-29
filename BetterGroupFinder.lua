@@ -487,7 +487,6 @@ function BetterGroupFinder:EnumDestinations(tDestinations)
 end
 
 function BetterGroupFinder:FilterSearchEntriesByCategory(nCategory)
-  SendVarToRover("entries", ktSearchEntries, 0)
   -- 1 is "Show all" which is a special category that requires no filtering
   if nCategory == 1 then
     return ktSearchEntries
