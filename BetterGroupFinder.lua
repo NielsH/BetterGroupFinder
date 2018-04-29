@@ -376,8 +376,12 @@ function BetterGroupFinder:DetectICCommThrottled()
 end
 
 function BetterGroupFinder:AssembleICCommMessage(tMsgParts)
-  local strMessageCombined = table.concat(tMsgParts)
-  return self.json.decode(strMessageCombined, 1, null, nil)
+  local bStatus, strMessageCombined = pcall(function() return table.concat(tMsgParts) end)
+  if bStatus then
+    return self.json.decode(strMessageCombined, 1, null, nil)
+  else
+    return false
+  end
 end
 
 function BetterGroupFinder:SendMessage(tMessage)
@@ -414,6 +418,10 @@ function BetterGroupFinder:ProcessSplittedMsgReceived(message)
   end
   if nItemsCount == nTotalItems then
     local ktFullMessageReceived = self:AssembleICCommMessage(ktSplittedMsgReceived[strItemId])
+    if not ktFullMessageReceived then
+      ktSplittedMsgReceived[strItemId] = nil
+      return
+    end
     if ktFullMessageReceived[ktMessageTypes["nMsgTypeId"]] == ktMessageTypes["SearchEntry"]["nId"] then
       ktSearchEntries[ktFullMessageReceived[ktMessageTypes["SearchEntry"]["strSearchEntryId"]]] = ktFullMessageReceived
       ktSplittedMsgReceived[strItemId] = nil
