@@ -704,6 +704,11 @@ function BetterGroupFinder:OnSubmitSearchEntryBtn( wndHandler, wndControl, eMous
     end
   end
 
+  if string.len(strTitle) < 2 then
+    self:CPrint("Better Group Finder: Please use a longer title before submitting your search entry")
+    return false
+  end
+
   local msgType = ktMessageTypes["SearchEntry"]
   local ktSearchEntry = {
     [ktMessageTypes["nMsgTypeId"]] = msgType["nId"],
