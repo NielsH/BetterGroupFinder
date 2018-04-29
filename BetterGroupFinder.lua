@@ -725,6 +725,26 @@ function BetterGroupFinder:OnSubmitSearchEntryBtn( wndHandler, wndControl, eMous
     return false
   end
 
+  if string.len(strTitle) > 55 then
+    self:CPrint("Better Group Finder: Please use a shorter title before submitting your search entry")
+    return false
+  end
+
+  if string.len(strMiniLvl) > 3 then
+    self:CPrint("Better Group Finder: Mimimum item level may not be more than 3 characters in your search entry")
+    return false
+  end
+
+  if string.len(strHeroism) > 5 then
+    self:CPrint("Better Group Finder: Minimum heroism may not be more than 5 characters in your search entry")
+    return false
+  end
+
+  if string.len(strDescription) > 140 then
+    self:CPrint("Better Group Finder: Description may not be longer than 140 characters in your search entry")
+    return false
+  end
+
   -- If you're here trying to increase the limit, please understand that the limit is
   -- due to the ICComm limits. If we allow "unlimited" search entries we simply can't proces them
   -- fast enough without increasing the iccomm send-rate and risk being throttled
