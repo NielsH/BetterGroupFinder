@@ -174,6 +174,7 @@ local bICCommThrottled = false
 local nLocalSearchEntriesCount = 0
 local nCreateListingsMsgQueueTimerInterval = 5
 local nProcessMsgQueueTimerInterval = 10
+local nRemoveStaleSearchEntriesTimerInterval = 60
 
 -----------------------------------------------------------------------------------------------
 -- Initialization
@@ -299,6 +300,19 @@ function BetterGroupFinder:OnBetterGroupFinderOn()
   end
 end
 
+function BetterGroupFinder:RemoveStaleSearchEntries()
+  local nCurrTime = os.time()
+  local nMaxMsgAge = 1200 -- 20 minutes
+  for k, v in pairs(ktSearchEntries) do
+    local ktSearchEntryData = ktMessageTypes["SearchEntry"]
+    local strSearchEntryId = v[ktSearchEntryData["strSearchEntryId"]]
+    if nCurrTime - v[ktSearchEntryData["nTimeStamp"]] > nMaxMsgAge then
+      ktSearchEntries[k] = nil
+      self:BuildActivitiesList(ktSearchEntries)
+    end
+  end
+end
+
 function BetterGroupFinder:SplitStringByChunk(text, chunkSize)
   local s = {}
   for i=1, #text, chunkSize do
@@ -316,6 +330,7 @@ function BetterGroupFinder:CreateListingsMsgQueue()
       if not ktMsgQueue[strSearchEntryId] then
         ktMsgQueue[strSearchEntryId] = {}
         v[ktSearchEntryData["nMemberCount"]] = (GroupLib.GetMemberCount() == 0 and 1) or GroupLib.GetMemberCount()
+        v[ktSearchEntryData["nTimeStamp"]] = os.time()
         local sMsgFull = self.json.encode(v, {"keyorder"})
         local tMsgSplitted = self:SplitStringByChunk(sMsgFull, 25)
         local nMsgSplittedCount = #tMsgSplitted
@@ -455,6 +470,7 @@ function BetterGroupFinder:JoinICCommChannel()
       self.timerCreateListingsMsgQueue = ApolloTimer.Create(nCreateListingsMsgQueueTimerInterval, true, "CreateListingsMsgQueue", self)
       self.timerProcessMsgQueue = ApolloTimer.Create(nProcessMsgQueueTimerInterval, true, "ProcessMsgQueue", self)
       self.timerDetectICCommThrottled = ApolloTimer.Create(nProcessMsgQueueTimerInterval, true, "DetectICCommThrottled", self)
+      self.timerRemoveStaleSearchEntries = ApolloTimer.Create(nRemoveStaleSearchEntriesTimerInterval, true, "RemoveStaleSearchEntries", self)
   end
 end
 
@@ -471,6 +487,7 @@ function BetterGroupFinder:EnumDestinations(tDestinations)
 end
 
 function BetterGroupFinder:FilterSearchEntriesByCategory(nCategory)
+  SendVarToRover("entries", ktSearchEntries, 0)
   -- 1 is "Show all" which is a special category that requires no filtering
   if nCategory == 1 then
     return ktSearchEntries
@@ -738,6 +755,9 @@ end
 
 function BetterGroupFinder:OnSearchEntryListBtnCheck( wndHandler, wndControl, eMouseButton )
   local ktSearchEntryData = ktSearchEntries[wndControl:GetData()]
+  if not ktSearchEntryData then
+    return
+  end
   local msgType = ktMessageTypes["SearchEntry"]
   local wndContainer = self.wndMain:FindChild("TabContentRightBottomListOfSeekers"):FindChild("TextContainer")
   local wndButtonsContainer = self.wndMain:FindChild("TabContentRightBottomListOfSeekers"):FindChild("ButtonsContainer") 
