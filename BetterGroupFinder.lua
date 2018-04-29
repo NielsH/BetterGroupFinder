@@ -709,6 +709,14 @@ function BetterGroupFinder:OnSubmitSearchEntryBtn( wndHandler, wndControl, eMous
     return false
   end
 
+  -- If you're here trying to increase the limit, please understand that the limit is
+  -- due to the ICComm limits. If we allow "unlimited" search entries we simply can't proces them
+  -- fast enough without increasing the iccomm send-rate and risk being throttled
+  if nLocalSearchEntriesCount >= 3 then
+    self:CPrint("Better Group Finder: You may not list more than 3 search entries at the same time")
+    return false
+  end
+
   local msgType = ktMessageTypes["SearchEntry"]
   local ktSearchEntry = {
     [ktMessageTypes["nMsgTypeId"]] = msgType["nId"],
