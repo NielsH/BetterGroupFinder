@@ -456,14 +456,22 @@ end
 function BetterGroupFinder:OnICCommThrottled(iccomm, strSender, idMessage)
 end
 
+function BetterGroupFinder:JoinICCommChannelFailed()
+  self:CPrint("Better Group Finder - warning: Unable to join addons communication channel (ICComm) for over a minute. This usually indicates we hit a wildstar bug that can only be resolved with a relog (not /reloadui).")
+end
+
 function BetterGroupFinder:JoinICCommChannel()
   self.timerJoinICCommChannel = nil
 
   self.channel = ICCommLib.JoinChannel("BetterGroupFinder", ICCommLib.CodeEnumICCommChannelType.Global)
   if not self.channel:IsReady() then
       self.timerJoinICCommChannel = ApolloTimer.Create(3, false, "JoinICCommChannel", self)
+      if not self.timerJoinICCommChannelFailed then
+        self.timerJoinICCommChannelFailed = ApolloTimer.Create(60, false, "JoinICCommChannelFailed", self)
+      end
   else
       self.timerJoinICCommChannel = nil
+      self.timerJoinICCommChannelFailed = nil
       self.channel:SetThrottledFunction("OnICCommThrottled", self)
       self.channel:SetReceivedMessageFunction("OnICCommMessageReceived", self)
       self.channel:SetSendMessageResultFunction("OnICCommSendMessageResult", self)
