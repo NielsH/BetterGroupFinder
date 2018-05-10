@@ -275,7 +275,7 @@ function BetterGroupFinder:OnDocLoaded()
     self.json = Apollo.GetPackage("Lib:dkJSON-2.5").tPackage
 
     -- Do additional Addon initialization here
-    self.timerjoinICCommChannel = ApolloTimer.Create(5, false, "JoinICCommChannel", self)
+    self.timerJoinICCommChannel = ApolloTimer.Create(5, false, "JoinICCommChannel", self)
     self.wndListOfSeekersList = self.wndMain:FindChild("ListOfSeekersTab")
     self.wndCreateSearchEntryList = self.wndMain:FindChild("CreateSearchEntryTab")
     self.wndHeaderButtons = self.wndMain:FindChild("HeaderButtons"):GetChildren()
