@@ -767,7 +767,12 @@ function BetterGroupFinder:OnSubmitSearchEntryBtn( wndHandler, wndControl, eMous
     [msgType["nTimeStamp"]] = os.time(),
     [msgType["nMemberCount"]] = (GroupLib.GetMemberCount() == 0 and 1) or GroupLib.GetMemberCount()
   }
-  nLocalSearchEntriesCount = nLocalSearchEntriesCount + 1
+  -- XXX TODO Removed incrementing the nLocalSearchEntriesCount
+  -- This means that search entries will overwrite the previous one.
+  -- Once we uncomment this line we must also have a way to manage multiple search entries
+  -- And perhaps a better way (or maybe a fixed ICComm in an update (carbine pls)) to communicate
+  -- with the other clients. Otherwise the amount of data is simply too much and we get throttle issues
+  -- nLocalSearchEntriesCount = nLocalSearchEntriesCount + 1
   ktSearchEntries[ktSearchEntry[msgType["strSearchEntryId"]]] = ktSearchEntry
   self:SelectListOfSeekersHeader()
 end
