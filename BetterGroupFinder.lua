@@ -792,9 +792,12 @@ function BetterGroupFinder:OnSearchEntryListBtnCheck( wndHandler, wndControl, eM
   end
   local msgType = ktMessageTypes["SearchEntry"]
   local wndContainer = self.wndMain:FindChild("TabContentRightBottomListOfSeekers"):FindChild("TextContainer")
-  local wndButtonsContainer = self.wndMain:FindChild("TabContentRightBottomListOfSeekers"):FindChild("ButtonsContainer") 
+  local wndButtonsContainer = self.wndMain:FindChild("TabContentRightBottomListOfSeekers"):FindChild("ButtonsContainer")
+  local strCharacterName, nListingCount = ktSearchEntryData[msgType["strSearchEntryId"]]:match("([^|]+)|([^|]+)")
+
   wndContainer:FindChild("Title"):SetText(ktSearchEntryData[msgType["strTitle"]])
   wndContainer:FindChild("Description"):SetText(ktSearchEntryData[msgType["strDescription"]])
+  wndContainer:FindChild("LeaderLabel"):FindChild("LeaderLabelText"):SetText(strCharacterName)
   local strDestinations = table.concat(self:EnumDestinations(ktSearchEntryData[msgType["tCategoriesSelection"]]), ",")
   wndContainer:FindChild("DestinationLabel"):FindChild("DestinationLabelText"):SetText(strDestinations)
   wndButtonsContainer:FindChild("RequestInviteBtn"):SetData(ktSearchEntryData[msgType["strSearchEntryId"]])
