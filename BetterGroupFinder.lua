@@ -156,6 +156,9 @@ local ktMessageTypes = {
     ["tCategoriesSelection"] = 10,
     ["nTimeStamp"] = 11,
     ["nMemberCount"] = 12,
+    ["bNeedDPS"] = 13,
+    ["bNeedTank"] = 14,
+    ["bNeedHealer"] = 15,
   },
   ["SplittedMsg"] = {
     ["nId"] = 3,
@@ -175,6 +178,7 @@ local nLocalSearchEntriesCount = 0
 local nCreateListingsMsgQueueTimerInterval = 5
 local nProcessMsgQueueTimerInterval = 10
 local nRemoveStaleSearchEntriesTimerInterval = 60
+local nCategorySelected = 1
 
 -----------------------------------------------------------------------------------------------
 -- Initialization
@@ -494,18 +498,29 @@ function BetterGroupFinder:EnumDestinations(tDestinations)
   return t
 end
 
-function BetterGroupFinder:FilterSearchEntriesByCategory(nCategory)
-  -- 1 is "Show all" which is a special category that requires no filtering
-  if nCategory == 1 then
-    return ktSearchEntries
-  end
+function BetterGroupFinder:FilterSearchEntries()
+  local wndCombatRole = self.wndMain:FindChild("CombatRole")
+  local bShowDPS = wndCombatRole:FindChild("DPS"):IsChecked()
+  local bShowTank = wndCombatRole:FindChild("Tank"):IsChecked()
+  local bShowHealer = wndCombatRole:FindChild("Healer"):IsChecked()
+
   local ktSearchEntriesFiltered = {}
   for k, v in pairs(ktSearchEntries) do
     if v[ktMessageTypes["nMsgTypeId"]] == ktMessageTypes["SearchEntry"]["nId"] then
-      local tCategories = v[ktMessageTypes["SearchEntry"]["tCategoriesSelection"]]
-      for nCurrCategory, tCurrCategoryData in pairs(tCategories) do
-        if not ktSearchEntriesFiltered[k] and nCurrCategory == nCategory then
+      local bNeedDPS = v[ktMessageTypes["SearchEntry"]["bNeedDPS"]]
+      local bNeedTank = v[ktMessageTypes["SearchEntry"]["bNeedTank"]]
+      local bNeedHealer = v[ktMessageTypes["SearchEntry"]["bNeedHealer"]]
+      if (bNeedDPS and bShowDPS) or (bNeedTank and bShowTank) or (bNeedHealer and bShowHealer) or (not bShowDPS and not bShowTank and not bShowHealer) then
+        -- 1 is "Show all" which is a special category that requires no further filtering
+        if nCategorySelected == 1 then
           ktSearchEntriesFiltered[k] = v
+        else
+          local tCategories = v[ktMessageTypes["SearchEntry"]["tCategoriesSelection"]]
+          for nCurrCategory, tCurrCategoryData in pairs(tCategories) do
+            if not ktSearchEntriesFiltered[k] and nCurrCategory == nCategorySelected then
+              ktSearchEntriesFiltered[k] = v
+            end
+          end
         end
       end
     end
@@ -710,6 +725,9 @@ function BetterGroupFinder:OnSubmitSearchEntryBtn( wndHandler, wndControl, eMous
   local strMiniLvl = wndSearchEntryData:FindChild("iLvlTextBox"):GetText()
   local bHeroism = wndSearchEntryData:FindChild("HeroismCheckbox"):IsChecked()
   local strHeroism = wndSearchEntryData:FindChild("HeroismTextBox"):GetText()
+  local bNeedDPS = wndSearchEntryData:FindChild("DPSCheckbox"):IsChecked()
+  local bNeedTank = wndSearchEntryData:FindChild("TankCheckbox"):IsChecked()
+  local bNeedHealer = wndSearchEntryData:FindChild("HealerCheckbox"):IsChecked()
   local strDescription = wndSearchEntryData:FindChild("DescriptionTextBox"):GetText()
   local tCategoriesSelection = {}
   for _, tCategory in pairs(self.wndMain:FindChild("TabContentListLeft"):GetChildren()) do
@@ -770,6 +788,9 @@ function BetterGroupFinder:OnSubmitSearchEntryBtn( wndHandler, wndControl, eMous
     [msgType["bHeroism"]] = bHeroism,
     [msgType["strHeroism"]] = strHeroism,
     [msgType["strDescription"]] = strDescription,
+    [msgType["bNeedDPS"]] = bNeedDPS,
+    [msgType["bNeedTank"]] = bNeedTank,
+    [msgType["bNeedHealer"]] = bNeedHealer,
     [msgType["tCategoriesSelection"]] = tCategoriesSelection,
     [msgType["strSearchEntryId"]] = GameLib.GetPlayerCharacterName() .. "|" .. (nLocalSearchEntriesCount + 1),
     [msgType["nTimeStamp"]] = os.time(),
@@ -810,14 +831,13 @@ function BetterGroupFinder:OnRequestInviteBtn( wndHandler, wndControl, eMouseBut
 end
 
 function BetterGroupFinder:OnSelectFilterCategoriesBaseBtn( wndHandler, wndControl, eMouseButton )
-  local nCategory = wndControl:GetData()
-  self.wndMain:FindChild("TabContentRight"):FindChild("RefreshListOfSeekersBtn"):SetData(nCategory)
-  local ktSearchEntriesFiltered = self:FilterSearchEntriesByCategory(nCategory)
+  nCategorySelected = wndControl:GetData()
+  local ktSearchEntriesFiltered = self:FilterSearchEntries()
   self:BuildActivitiesList(ktSearchEntriesFiltered)
 end
 
 function BetterGroupFinder:OnRefreshListOfSeekersBtn( wndHandler, wndControl, eMouseButton )
-  local ktSearchEntriesFiltered = self:FilterSearchEntriesByCategory(wndControl:GetData())
+  local ktSearchEntriesFiltered = self:FilterSearchEntries()
   self:BuildActivitiesList(ktSearchEntriesFiltered)
 end
 
