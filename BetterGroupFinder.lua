@@ -41,6 +41,12 @@ local ktCategoriesData = {
       [3] = "Redmoon Terror",
       [4] = "Custom",
     },
+    ["ktMaxGroupSize"] = {
+      [1] = 20,
+      [2] = 20,
+      [3] = 20,
+      [4] = 20,
+    },
   },
   [3] = {
     ["strName"] = "Dungeons",
@@ -56,6 +62,16 @@ local ktCategoriesData = {
       [7] = "Coldblood Citadel",
       [8] = "Custom",
     },
+    ["ktMaxGroupSize"] = {
+      [1] = 5,
+      [2] = 5,
+      [3] = 5,
+      [4] = 5,
+      [5] = 5,
+      [6] = 5,
+      [7] = 5,
+      [8] = 5,
+    },
   },
   [4] = {
     ["strName"] = "Adventures",
@@ -69,6 +85,15 @@ local ktCategoriesData = {
       [5] = "Bay of Betrayal",
       [6] = "Riot in the Void",
       [7] = "Custom",
+    },
+    ["ktMaxGroupSize"] = {
+      [1] = 5,
+      [2] = 5,
+      [3] = 5,
+      [4] = 5,
+      [5] = 5,
+      [6] = 5,
+      [7] = 5,
     },
   },
   [5] = {
@@ -86,6 +111,17 @@ local ktCategoriesData = {
       [8] = "Gauntlet",
       [9] = "Custom",
     },
+    ["ktMaxGroupSize"] = {
+      [1] = 5,
+      [2] = 5,
+      [3] = 5,
+      [4] = 5,
+      [5] = 5,
+      [6] = 5,
+      [7] = 5,
+      [8] = 5,
+      [9] = 5,
+    },
   },
   [6] = {
     ["strName"] = "PvP",
@@ -101,6 +137,16 @@ local ktCategoriesData = {
       [7] = "Arena - 5v5",
       [8] = "Custom",
     },
+    ["ktMaxGroupSize"] = {
+      [1] = 10,
+      [2] = 15,
+      [3] = 10,
+      [4] = 30,
+      [5] = 2,
+      [6] = 3,
+      [7] = 5,
+      [8] = 40,
+    },
   },
   [7] = {
     ["strName"] = "Open World and Quests",
@@ -108,6 +154,9 @@ local ktCategoriesData = {
     ["strIconSprite"] = "IconSprites:Icon_Mission_Explorer_ClaimTerritory",
     ["ktEntries"] = {
       [1] = "Custom",
+    },
+    ["ktMaxGroupSize"] = {
+      [1] = 40,
     },
   },
 }
@@ -276,6 +325,8 @@ function BetterGroupFinder:OnDocLoaded()
 
     -- Do additional Addon initialization here
     self.timerJoinICCommChannel = ApolloTimer.Create(5, false, "JoinICCommChannel", self)
+    -- XXX change to 300s
+    self.timerAdvertiseQueueInChat = ApolloTimer.Create(5, true, "AdvertiseQueueInChat", self)
     self.wndListOfSeekersList = self.wndMain:FindChild("ListOfSeekersTab")
     self.wndCreateSearchEntryList = self.wndMain:FindChild("CreateSearchEntryTab")
     self.wndHeaderButtons = self.wndMain:FindChild("HeaderButtons"):GetChildren()
@@ -528,6 +579,36 @@ function BetterGroupFinder:FilterSearchEntries()
   return ktSearchEntriesFiltered
 end
 
+function BetterGroupFinder:GetMaxGroupSizeForSearchEntry(tCategoriesSelection)
+  local nMaxGroupSize = 2
+  for nCat, tCatData in pairs(tCategoriesSelection) do
+    for _, nEntryId in pairs(tCatData) do
+      if ktCategoriesData[nCat]["ktMaxGroupSize"][nEntryId] > nMaxGroupSize then
+        nMaxGroupSize = ktCategoriesData[nCat]["ktMaxGroupSize"][nEntryId]
+      end
+    end
+  end
+  return nMaxGroupSize
+end
+
+function BetterGroupFinder:AdvertiseQueueInChat()
+  for k, v in pairs(ktSearchEntries) do
+    local ktSearchEntryData = ktMessageTypes["SearchEntry"]
+    local strSearchEntryId = v[ktSearchEntryData["strSearchEntryId"]]
+    local strCharacterName, nListingCount = strSearchEntryId:match("([^|]+)|([^|]+)")
+    if GameLib.GetPlayerCharacterName() == strCharacterName then
+      local strTitle = v[ktSearchEntryData["strTitle"]]
+      local strCurrMemberCount = v[ktSearchEntryData["nMemberCount"]]
+      local nMaxGroupSize = self:GetMaxGroupSizeForSearchEntry(v[ktSearchEntryData["tCategoriesSelection"]])
+      
+      self:CPrint("[BGF] - " .. strTitle .. " [" .. strCurrMemberCount .. "/" .. nMaxGroupSize .. "]")
+      -- return after posting a single item so we dont spam.
+      -- We may support multiple queue entries at once in the future which is why it is in a loop
+      return
+    end
+  end
+end
+
 function BetterGroupFinder:Decode(str)
   if type(str) ~= "string" then
     return nil
@@ -676,8 +757,9 @@ function BetterGroupFinder:BuildActivitiesList(ktSearchEntries)
       local wndCurrItemTitleText = wndCurrItem:FindChild("TabContentRightItemBaseBtnTitle")
       local wndCurrItemGroupStatusText = wndCurrItem:FindChild("TabContentRightItemBaseBtnGroupStatusText")
       local wndCurrItemBtn = wndCurrItem:FindChild("TabContentRightItemBaseBtn")
+      local nMaxGroupSize = self:GetMaxGroupSizeForSearchEntry(v[ktMessageTypes["SearchEntry"]["tCategoriesSelection"]])
       wndCurrItemTitleText:SetText(v[ktMessageTypes["SearchEntry"]["strTitle"]])
-      wndCurrItemGroupStatusText:SetText(v[ktMessageTypes["SearchEntry"]["nMemberCount"]])
+      wndCurrItemGroupStatusText:SetText(v[ktMessageTypes["SearchEntry"]["nMemberCount"]] .. "/" .. nMaxGroupSize)
       wndCurrItemBtn:SetTooltip(v[ktMessageTypes["SearchEntry"]["strDescription"]])
       wndCurrItem:SetData(v[ktMessageTypes["SearchEntry"]["strSearchEntryId"]])
       wndCurrItemBtn:SetData(v[ktMessageTypes["SearchEntry"]["strSearchEntryId"]])
