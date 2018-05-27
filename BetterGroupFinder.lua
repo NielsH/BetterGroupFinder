@@ -216,6 +216,10 @@ local ktMessageTypes = {
     ["strItemData"] = 5,
     ["strItemId"] = 6,
   },
+  ["CancelSearchEntry"] = {
+    ["nId"] = 4,
+    ["strSearchEntryId"] = 2,
+  }
 }
 
 local ktMsgQueue = {}
@@ -492,10 +496,18 @@ function BetterGroupFinder:ProcessSplittedMsgReceived(message)
       ktSplittedMsgReceived[strItemId] = nil
       return
     end
+
     if ktFullMessageReceived[ktMessageTypes["nMsgTypeId"]] == ktMessageTypes["SearchEntry"]["nId"] then
       ktSearchEntries[ktFullMessageReceived[ktMessageTypes["SearchEntry"]["strSearchEntryId"]]] = ktFullMessageReceived
       ktSplittedMsgReceived[strItemId] = nil
     end
+
+    if ktFullMessageReceived[ktMessageTypes["nMsgTypeId"]] == ktMessageTypes["CancelSearchEntry"]["nId"] then
+      local strSearchEntryId = ktFullMessageReceived[ktMessageTypes["CancelSearchEntry"]["strSearchEntryId"]]
+      ktSearchEntries[strSearchEntryId] = nil
+      ktSplittedMsgReceived[strItemId] = nil
+    end
+
   end
 end
 
@@ -856,6 +868,8 @@ function BetterGroupFinder:OnSubmitSearchEntryBtn( wndHandler, wndControl, eMous
   -- If you're here trying to increase the limit, please understand that the limit is
   -- due to the ICComm limits. If we allow "unlimited" search entries we simply can't proces them
   -- fast enough without increasing the iccomm send-rate and risk being throttled
+  -- XXX note: currently this doesn't work as we re-use the table key for the search entry, so the new entry overwrites the old one
+  -- if we start supporting multiple search entries in the future this has to be changed.
   if nLocalSearchEntriesCount >= 3 then
     self:CPrint("Better Group Finder: You may not list more than 3 search entries at the same time")
     return false
@@ -921,6 +935,37 @@ end
 function BetterGroupFinder:OnRefreshListOfSeekersBtn( wndHandler, wndControl, eMouseButton )
   local ktSearchEntriesFiltered = self:FilterSearchEntries()
   self:BuildActivitiesList(ktSearchEntriesFiltered)
+end
+
+function BetterGroupFinder:OnCancelSearchEntryBtn( wndHandler, wndControl, eMouseButton )
+  for k, v in pairs(ktSearchEntries) do
+    local ktSearchEntryData = ktMessageTypes["SearchEntry"]
+    local strSearchEntryId = v[ktSearchEntryData["strSearchEntryId"]]
+    local strCharacterName, nListingCount = strSearchEntryId:match("([^|]+)|([^|]+)")
+    if GameLib.GetPlayerCharacterName() == strCharacterName then
+      ktSearchEntries[strSearchEntryId] = nil
+      if not ktMsgQueue["CancelSearchEntry_" .. strSearchEntryId] then
+        ktMsgQueue["CancelSearchEntry_" .. strSearchEntryId] = {}
+        local tMsg = {
+          [ktMessageTypes["nMsgTypeId"]] = ktMessageTypes["CancelSearchEntry"]["nId"],
+          [ktMessageTypes["CancelSearchEntry"]["strSearchEntryId"]] = strSearchEntryId,
+        }
+        local sMsgFull = self.json.encode(tMsg, {"keyorder"})
+        local tMsgSplitted = self:SplitStringByChunk(sMsgFull, 25)
+        local nMsgSplittedCount = #tMsgSplitted
+        for nCount, item in orderedPairs(tMsgSplitted) do
+          local t = {
+            [ktMessageTypes["nMsgTypeId"]] = ktMessageTypes["SplittedMsg"]["nId"],
+            [ktMessageTypes["SplittedMsg"]["nCurrItem"]] = nCount,
+            [ktMessageTypes["SplittedMsg"]["nTotalItems"]] = nMsgSplittedCount,
+            [ktMessageTypes["SplittedMsg"]["strItemData"]] = item,
+            [ktMessageTypes["SplittedMsg"]["strItemId"]] = "CancelSearchEntry_" .. strSearchEntryId,
+          }
+          ktMsgQueue["CancelSearchEntry_" .. strSearchEntryId][nCount] = t
+        end
+      end
+    end
+  end
 end
 
 -----------------------------------------------------------------------------------------------
