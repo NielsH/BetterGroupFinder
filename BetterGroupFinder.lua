@@ -324,6 +324,8 @@ function BetterGroupFinder:OnDocLoaded()
 
     -- Register handlers for events, slash commands and timer, etc.
     -- e.g. Apollo.RegisterEventHandler("KeyDown", "OnKeyDown", self)
+    Apollo.RegisterEventHandler("ChangeWorld", "OnChangeWorld", self)
+
     Apollo.RegisterSlashCommand("bgf", "OnBetterGroupFinderOn", self)
     self.json = Apollo.GetPackage("Lib:dkJSON-2.5").tPackage
 
@@ -356,6 +358,56 @@ function BetterGroupFinder:OnBetterGroupFinderOn()
   end
   if not bHeaderIsSelected then
     self:SelectListOfSeekersHeader()
+  end
+end
+
+function BetterGroupFinder:OnChangeWorld()
+  for k, v in pairs(ktSearchEntries) do
+    local ktSearchEntryData = ktMessageTypes["SearchEntry"]
+    local strSearchEntryId = v[ktSearchEntryData["strSearchEntryId"]]
+    local strCharacterName, nListingCount = strSearchEntryId:match("([^|]+)|([^|]+)")
+    if GameLib.GetPlayerCharacterName() == strCharacterName then
+      local nMaxGroupSize = self:GetMaxGroupSizeForSearchEntry(v[ktMessageTypes["SearchEntry"]["tCategoriesSelection"]])
+      if GroupLib.GetMemberCount() == nMaxGroupSize then
+        self:CancelSpecificSearchEntry(strSearchEntryId)
+      end
+    end
+  end
+end
+
+function BetterGroupFinder:CancelSpecificSearchEntry(strSearchEntryId)
+  if not ktSearchEntries[strSearchEntryId] then return end
+  ktSearchEntries[strSearchEntryId] = nil
+  if not ktMsgQueue["CancelSearchEntry_" .. strSearchEntryId] then
+    ktMsgQueue["CancelSearchEntry_" .. strSearchEntryId] = {}
+    local tMsg = {
+      [ktMessageTypes["nMsgTypeId"]] = ktMessageTypes["CancelSearchEntry"]["nId"],
+      [ktMessageTypes["CancelSearchEntry"]["strSearchEntryId"]] = strSearchEntryId,
+    }
+    local sMsgFull = self.json.encode(tMsg, {"keyorder"})
+    local tMsgSplitted = self:SplitStringByChunk(sMsgFull, 25)
+    local nMsgSplittedCount = #tMsgSplitted
+    for nCount, item in orderedPairs(tMsgSplitted) do
+      local t = {
+        [ktMessageTypes["nMsgTypeId"]] = ktMessageTypes["SplittedMsg"]["nId"],
+        [ktMessageTypes["SplittedMsg"]["nCurrItem"]] = nCount,
+        [ktMessageTypes["SplittedMsg"]["nTotalItems"]] = nMsgSplittedCount,
+        [ktMessageTypes["SplittedMsg"]["strItemData"]] = item,
+        [ktMessageTypes["SplittedMsg"]["strItemId"]] = "CancelSearchEntry_" .. strSearchEntryId,
+      }
+      ktMsgQueue["CancelSearchEntry_" .. strSearchEntryId][nCount] = t
+    end
+  end
+end
+
+function BetterGroupFinder:CancelAllSearchEntries()
+  for k, v in pairs(ktSearchEntries) do
+    local ktSearchEntryData = ktMessageTypes["SearchEntry"]
+    local strSearchEntryId = v[ktSearchEntryData["strSearchEntryId"]]
+    local strCharacterName, nListingCount = strSearchEntryId:match("([^|]+)|([^|]+)")
+    if GameLib.GetPlayerCharacterName() == strCharacterName then
+      self:CancelSpecificSearchEntry(strSearchEntryId)
+    end
   end
 end
 
@@ -938,34 +990,7 @@ function BetterGroupFinder:OnRefreshListOfSeekersBtn( wndHandler, wndControl, eM
 end
 
 function BetterGroupFinder:OnCancelSearchEntryBtn( wndHandler, wndControl, eMouseButton )
-  for k, v in pairs(ktSearchEntries) do
-    local ktSearchEntryData = ktMessageTypes["SearchEntry"]
-    local strSearchEntryId = v[ktSearchEntryData["strSearchEntryId"]]
-    local strCharacterName, nListingCount = strSearchEntryId:match("([^|]+)|([^|]+)")
-    if GameLib.GetPlayerCharacterName() == strCharacterName then
-      ktSearchEntries[strSearchEntryId] = nil
-      if not ktMsgQueue["CancelSearchEntry_" .. strSearchEntryId] then
-        ktMsgQueue["CancelSearchEntry_" .. strSearchEntryId] = {}
-        local tMsg = {
-          [ktMessageTypes["nMsgTypeId"]] = ktMessageTypes["CancelSearchEntry"]["nId"],
-          [ktMessageTypes["CancelSearchEntry"]["strSearchEntryId"]] = strSearchEntryId,
-        }
-        local sMsgFull = self.json.encode(tMsg, {"keyorder"})
-        local tMsgSplitted = self:SplitStringByChunk(sMsgFull, 25)
-        local nMsgSplittedCount = #tMsgSplitted
-        for nCount, item in orderedPairs(tMsgSplitted) do
-          local t = {
-            [ktMessageTypes["nMsgTypeId"]] = ktMessageTypes["SplittedMsg"]["nId"],
-            [ktMessageTypes["SplittedMsg"]["nCurrItem"]] = nCount,
-            [ktMessageTypes["SplittedMsg"]["nTotalItems"]] = nMsgSplittedCount,
-            [ktMessageTypes["SplittedMsg"]["strItemData"]] = item,
-            [ktMessageTypes["SplittedMsg"]["strItemId"]] = "CancelSearchEntry_" .. strSearchEntryId,
-          }
-          ktMsgQueue["CancelSearchEntry_" .. strSearchEntryId][nCount] = t
-        end
-      end
-    end
-  end
+  self:CancelAllSearchEntries()
 end
 
 -----------------------------------------------------------------------------------------------
