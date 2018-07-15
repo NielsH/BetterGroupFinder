@@ -974,6 +974,7 @@ end
 
 function BetterGroupFinder:OnRequestInviteBtn( wndHandler, wndControl, eMouseButton )
   local strSearchEntryId = wndControl:GetData()
+  if not strSearchEntryId then return end
   local strCharacterName, nListingCount = strSearchEntryId:match("([^|]+)|([^|]+)")
   GroupLib.Join(strCharacterName)
 end
