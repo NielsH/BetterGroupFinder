@@ -36,25 +36,25 @@ local ktCategoriesData = {
     ["bShowCreateSearchEntry"] = true,
     ["bShowEntriesInFilterList"] = true,
     ["ktEntries"] = {
-      [1] = "Raids",
-      [2] = "Dungeons",
-      [3] = "Adventures",
-      [4] = "Expeditions",
-      [5] = "Open World / Quests",
+      [200] = "Raids",
+      [201] = "Dungeons",
+      [202] = "Adventures",
+      [203] = "Expeditions",
+      [204] = "Open World / Quests",
     },
     ["ktMaxGroupSize"] = {
-      [1] = 20,
-      [2] = 5,
-      [3] = 5,
-      [4] = 5,
-      [5] = 40,
+      [200] = 20,
+      [201] = 5,
+      [202] = 5,
+      [203] = 5,
+      [204] = 40,
     },
     ["ktIconSprites"] = {
-      [1] = "IconSprites:Icon_Mission_Settler_Posse",
-      [2] = "IconSprites:Icon_Mission_Explorer_Explorerdoor",
-      [3] = "IconSprites:Icon_Mission_Explorer_Vista",
-      [4] = "charactercreate:sprCharC_Finalize_SkillLevel2",
-      [5] = "IconSprites:Icon_Mission_Explorer_ClaimTerritory",
+      [200] = "IconSprites:Icon_Mission_Settler_Posse",
+      [201] = "IconSprites:Icon_Mission_Explorer_Explorerdoor",
+      [202] = "IconSprites:Icon_Mission_Explorer_Vista",
+      [203] = "charactercreate:sprCharC_Finalize_SkillLevel2",
+      [204] = "IconSprites:Icon_Mission_Explorer_ClaimTerritory",
     }
   },
   [3] = {
@@ -63,22 +63,32 @@ local ktCategoriesData = {
     ["bShowEntriesInFilterList"] = false,
     ["strIconSprite"] = "Contracts:sprContracts_PvP",
     ["ktEntries"] = {
-      [1] = "Battlegrounds",
-      [2] = "Warplots",
-      [3] = "Arena - 2v2",
-      [4] = "Arena - 3v3",
-      [5] = "Arena - 5v5",
-      [6] = "Custom",
+      [300] = "Battlegrounds",
+      [301] = "Warplots",
+      [302] = "Arena - 2v2",
+      [303] = "Arena - 3v3",
+      [304] = "Arena - 5v5",
+      [305] = "Custom",
     },
     ["ktMaxGroupSize"] = {
-      [1] = 40,
-      [2] = 40,
-      [3] = 2,
-      [4] = 3,
-      [5] = 5,
-      [6] = 40,
+      [300] = 40,
+      [301] = 40,
+      [302] = 2,
+      [303] = 3,
+      [304] = 5,
+      [305] = 40,
     },
   },
+}
+
+local ktCategoriesSortOrder = {
+  [1] = 1,
+  [200] = 2,
+  [201] = 3,
+  [202] = 4,
+  [203] = 5,
+  [204] = 6,
+  [3] = 7,
 }
 
 local tMatchmakerSprites = {
@@ -557,11 +567,9 @@ function BetterGroupFinder:FilterSearchEntries()
         if nCategorySelected == 1 then
           ktSearchEntriesFiltered[k] = v
         else
-          local tCategories = v[ktMessageTypes["SearchEntry"]["tCategorySelection"]]
-          for nCurrCategory, tCurrCategoryData in pairs(tCategories) do
-            if not ktSearchEntriesFiltered[k] and nCurrCategory == nCategorySelected then
-              ktSearchEntriesFiltered[k] = v
-            end
+          local nCategoryKey, nCategoryEntryKey = next(v[ktMessageTypes["SearchEntry"]["tCategorySelection"]])
+          if not ktSearchEntriesFiltered[k] and ((ktCategoriesSortOrder[nCategorySelected] == ktCategoriesSortOrder[nCategoryEntryKey]) or (nCategoryKey == nCategorySelected)) then
+            ktSearchEntriesFiltered[k] = v
           end
         end
       end
@@ -706,37 +714,35 @@ function BetterGroupFinder:SelectCreateSearchEntryHeader()
   self:BuildCreateSearchEntriesActivitiesList()
 end
 
-function BetterGroupFinder:BuildCategoryEntry(nSortOrder, strIconSprite, strEntry)
-    local wndParent = self.wndMain:FindChild("TabContentListLeft")
-    local wndCurrItem = Apollo.LoadForm(self.xmlDoc, "FilterCategoriesBase", wndParent, self)
-    local wndCurrItemBtn = wndCurrItem:FindChild("FilterCategoriesBaseBtn")
-    local wndCurrItemBtnText = wndCurrItem:FindChild("FilterCategoriesBaseBtnText")
-    local wndCurrItemBtnIcon = wndCurrItem:FindChild("FilterCategoriesBaseBtnIcon")
-    wndCurrItemBtn:SetData(nSortOrder)
-    if nSortOrder == 1 then
-      wndCurrItemBtn:SetCheck(true)
-      self.wndMain:FindChild("TabContentRight"):FindChild("RefreshListOfSeekersBtn"):SetData(nSortOrder)
-    end
+function BetterGroupFinder:BuildCategoryEntry(nSortOrderKey, strIconSprite, strEntry)
+  local nSortOrder = ktCategoriesSortOrder[nSortOrderKey]
+  local wndParent = self.wndMain:FindChild("TabContentListLeft")
+  local wndCurrItem = Apollo.LoadForm(self.xmlDoc, "FilterCategoriesBase", wndParent, self)
+  local wndCurrItemBtn = wndCurrItem:FindChild("FilterCategoriesBaseBtn")
+  local wndCurrItemBtnText = wndCurrItem:FindChild("FilterCategoriesBaseBtnText")
+  local wndCurrItemBtnIcon = wndCurrItem:FindChild("FilterCategoriesBaseBtnIcon")
+  wndCurrItemBtn:SetData(nSortOrderKey)
+  if nSortOrder == 1 then
+    wndCurrItemBtn:SetCheck(true)
+    self.wndMain:FindChild("TabContentRight"):FindChild("RefreshListOfSeekersBtn"):SetData(nSortOrder)
+  end
 
-    wndCurrItemBtnIcon:SetSprite(strIconSprite)
-    wndCurrItemBtnText:SetText(strEntry)
-    wndCurrItem:SetData(strEntry)
-    wndCurrItem:SetAnchorPoints(0, 0, 0, 0)
-    local nLeft, nTop, nRight, nBottom = wndCurrItem:GetAnchorOffsets()
-    wndCurrItem:SetAnchorOffsets(nLeft, ((nSortOrder - 1) * 57), (nRight - 8), (nSortOrder * 57))
+  wndCurrItemBtnIcon:SetSprite(strIconSprite)
+  wndCurrItemBtnText:SetText(strEntry)
+  wndCurrItem:SetData(strEntry)
+  wndCurrItem:SetAnchorPoints(0, 0, 0, 0)
+  local nLeft, nTop, nRight, nBottom = wndCurrItem:GetAnchorOffsets()
+  wndCurrItem:SetAnchorOffsets(nLeft, ((nSortOrder - 1) * 57), (nRight - 8), (nSortOrder * 57))
 end
 
 function BetterGroupFinder:BuildCategoriesList()
-  local nActualSortOrder = 1
-  for nSortOrder, tData in pairs(ktCategoriesData) do
+  for nKey, tData in orderedPairs(ktCategoriesData) do
     if tData["bShowEntriesInFilterList"] then
-      for _nSortOrder, _strEntry in pairs(tData["ktEntries"]) do
-        self:BuildCategoryEntry(nActualSortOrder, tData["ktIconSprites"][_nSortOrder], _strEntry)
-        nActualSortOrder = nActualSortOrder + 1
+      for _nKey, _strEntry in orderedPairs(tData["ktEntries"]) do
+        self:BuildCategoryEntry(_nKey, tData["ktIconSprites"][_nKey], _strEntry)
       end
     else
-      self:BuildCategoryEntry(nActualSortOrder, tData["strIconSprite"], tData["strName"])
-      nActualSortOrder = nActualSortOrder + 1
+      self:BuildCategoryEntry(nKey, tData["strIconSprite"], tData["strName"])
     end
   end
 end
