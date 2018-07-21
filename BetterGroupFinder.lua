@@ -32,131 +32,51 @@ local ktCategoriesData = {
     ["strIconSprite"] = "IconSprites:Icon_Mission_Scientist_SpecimenSurvey",
   },
   [2] = {
-    ["strName"] = "Raids",
+    ["strName"] = "PvE",
     ["bShowCreateSearchEntry"] = true,
-    ["strIconSprite"] = "IconSprites:Icon_Mission_Settler_Posse",
+    ["bShowEntriesInFilterList"] = true,
     ["ktEntries"] = {
-      [1] = "Genetic Archives",
-      [2] = "Datascape",
-      [3] = "Redmoon Terror",
-      [4] = "Custom",
+      [1] = "Raids",
+      [2] = "Dungeons",
+      [3] = "Adventures",
+      [4] = "Expeditions",
+      [5] = "Open World / Quests",
     },
     ["ktMaxGroupSize"] = {
       [1] = 20,
-      [2] = 20,
-      [3] = 20,
-      [4] = 20,
+      [2] = 5,
+      [3] = 5,
+      [4] = 5,
+      [5] = 40,
     },
+    ["ktIconSprites"] = {
+      [1] = "IconSprites:Icon_Mission_Settler_Posse",
+      [2] = "IconSprites:Icon_Mission_Explorer_Explorerdoor",
+      [3] = "IconSprites:Icon_Mission_Explorer_Vista",
+      [4] = "charactercreate:sprCharC_Finalize_SkillLevel2",
+      [5] = "IconSprites:Icon_Mission_Explorer_ClaimTerritory",
+    }
   },
   [3] = {
-    ["strName"] = "Dungeons",
-    ["bShowCreateSearchEntry"] = true,
-    ["strIconSprite"] = "IconSprites:Icon_Mission_Explorer_Explorerdoor",
-    ["ktEntries"] = {
-      [1] = "Protogames Academy",
-      [2] = "Stormtalon's Lair",
-      [3] = "Ruins of Kel Voreth",
-      [4] = "Skullcano",
-      [5] = "Sanctuary of the Swordmaiden",
-      [6] = "Ultimate Protogames",
-      [7] = "Coldblood Citadel",
-      [8] = "Custom",
-    },
-    ["ktMaxGroupSize"] = {
-      [1] = 5,
-      [2] = 5,
-      [3] = 5,
-      [4] = 5,
-      [5] = 5,
-      [6] = 5,
-      [7] = 5,
-      [8] = 5,
-    },
-  },
-  [4] = {
-    ["strName"] = "Adventures",
-    ["bShowCreateSearchEntry"] = true,
-    ["strIconSprite"] = "IconSprites:Icon_Mission_Explorer_Vista",
-    ["ktEntries"] = {
-      [1] = "War of the Wilds",
-      [2] = "The Siege of Tempest Refuge",
-      [3] = "Crimelords of Whitevale",
-      [4] = "The Malgrave Trail",
-      [5] = "Bay of Betrayal",
-      [6] = "Riot in the Void",
-      [7] = "Custom",
-    },
-    ["ktMaxGroupSize"] = {
-      [1] = 5,
-      [2] = 5,
-      [3] = 5,
-      [4] = 5,
-      [5] = 5,
-      [6] = 5,
-      [7] = 5,
-    },
-  },
-  [5] = {
-    ["strName"] = "Expeditions",
-    ["bShowCreateSearchEntry"] = true,
-    ["strIconSprite"] = "charactercreate:sprCharC_Finalize_SkillLevel2",
-    ["ktEntries"] = {
-      [1] = "Fragment Zero",
-      [2] = "Outpost M-13",
-      [3] = "Infestation",
-      [4] = "Evil from the Ether",
-      [5] = "Rage Logic",
-      [6] = "Space Madness",
-      [7] = "Deep Space Exploration",
-      [8] = "Gauntlet",
-      [9] = "Custom",
-    },
-    ["ktMaxGroupSize"] = {
-      [1] = 5,
-      [2] = 5,
-      [3] = 5,
-      [4] = 5,
-      [5] = 5,
-      [6] = 5,
-      [7] = 5,
-      [8] = 5,
-      [9] = 5,
-    },
-  },
-  [6] = {
     ["strName"] = "PvP",
     ["bShowCreateSearchEntry"] = true,
+    ["bShowEntriesInFilterList"] = false,
     ["strIconSprite"] = "Contracts:sprContracts_PvP",
     ["ktEntries"] = {
-      [1] = "Walatiki Temple",
-      [2] = "Daggerstone Pass",
-      [3] = "Halls of the Bloodsworn: Reloaded",
-      [4] = "Warplot",
-      [5] = "Arena - 2v2",
-      [6] = "Arena - 3v3",
-      [7] = "Arena - 5v5",
-      [8] = "Custom",
-    },
-    ["ktMaxGroupSize"] = {
-      [1] = 10,
-      [2] = 15,
-      [3] = 10,
-      [4] = 30,
-      [5] = 2,
-      [6] = 3,
-      [7] = 5,
-      [8] = 40,
-    },
-  },
-  [7] = {
-    ["strName"] = "Open World and Quests",
-    ["bShowCreateSearchEntry"] = true,
-    ["strIconSprite"] = "IconSprites:Icon_Mission_Explorer_ClaimTerritory",
-    ["ktEntries"] = {
-      [1] = "Custom",
+      [1] = "Battlegrounds",
+      [2] = "Warplots",
+      [3] = "Arena - 2v2",
+      [4] = "Arena - 3v3",
+      [5] = "Arena - 5v5",
+      [6] = "Custom",
     },
     ["ktMaxGroupSize"] = {
       [1] = 40,
+      [2] = 40,
+      [3] = 2,
+      [4] = 3,
+      [5] = 5,
+      [6] = 40,
     },
   },
 }
@@ -202,7 +122,7 @@ local ktMessageTypes = {
     ["bHeroism"] = 7,
     ["strHeroism"] = 8,
     ["strDescription"] = 9,
-    ["tCategoriesSelection"] = 10,
+    ["tCategorySelection"] = 10,
     ["nTimeStamp"] = 11,
     ["nMemberCount"] = 12,
     ["bNeedDPS"] = 13,
@@ -367,7 +287,9 @@ function BetterGroupFinder:OnChangeWorld()
     local strSearchEntryId = v[ktSearchEntryData["strSearchEntryId"]]
     local strCharacterName, nListingCount = strSearchEntryId:match("([^|]+)|([^|]+)")
     if GameLib.GetPlayerCharacterName() == strCharacterName then
-      local nMaxGroupSize = self:GetMaxGroupSizeForSearchEntry(v[ktMessageTypes["SearchEntry"]["tCategoriesSelection"]])
+      local nCategoryKey, nCategoryEntryKey = next(v[ktSearchEntryData["tCategorySelection"]])
+      local nMaxGroupSize = ktCategoriesData[nCategoryKey]["ktMaxGroupSize"][nCategoryEntryKey]
+
       if GroupLib.GetMemberCount() == nMaxGroupSize then
         self:CancelSpecificSearchEntry(strSearchEntryId)
       end
@@ -601,18 +523,6 @@ function BetterGroupFinder:JoinICCommChannel()
   end
 end
 
-function BetterGroupFinder:EnumDestinations(tDestinations)
-  local t = {}
-  for k, v in pairs(tDestinations) do
-    for item, value in pairs(v) do
-      if ktCategoriesData[k]["ktEntries"][value] ~= "Custom" then
-        table.insert(t, ktCategoriesData[k]["ktEntries"][value])
-      end
-    end
-  end
-  return t
-end
-
 function BetterGroupFinder:FilterSearchEntries()
   local wndCombatRole = self.wndMain:FindChild("CombatRole")
   local bShowDPS = wndCombatRole:FindChild("DPS"):IsChecked()
@@ -630,7 +540,7 @@ function BetterGroupFinder:FilterSearchEntries()
         if nCategorySelected == 1 then
           ktSearchEntriesFiltered[k] = v
         else
-          local tCategories = v[ktMessageTypes["SearchEntry"]["tCategoriesSelection"]]
+          local tCategories = v[ktMessageTypes["SearchEntry"]["tCategorySelection"]]
           for nCurrCategory, tCurrCategoryData in pairs(tCategories) do
             if not ktSearchEntriesFiltered[k] and nCurrCategory == nCategorySelected then
               ktSearchEntriesFiltered[k] = v
@@ -643,18 +553,6 @@ function BetterGroupFinder:FilterSearchEntries()
   return ktSearchEntriesFiltered
 end
 
-function BetterGroupFinder:GetMaxGroupSizeForSearchEntry(tCategoriesSelection)
-  local nMaxGroupSize = 2
-  for nCat, tCatData in pairs(tCategoriesSelection) do
-    for _, nEntryId in pairs(tCatData) do
-      if ktCategoriesData[nCat]["ktMaxGroupSize"][nEntryId] > nMaxGroupSize then
-        nMaxGroupSize = ktCategoriesData[nCat]["ktMaxGroupSize"][nEntryId]
-      end
-    end
-  end
-  return nMaxGroupSize
-end
-
 function BetterGroupFinder:AdvertiseQueueInChat()
   for k, v in pairs(ktSearchEntries) do
     local ktSearchEntryData = ktMessageTypes["SearchEntry"]
@@ -662,8 +560,9 @@ function BetterGroupFinder:AdvertiseQueueInChat()
     local strCharacterName, nListingCount = strSearchEntryId:match("([^|]+)|([^|]+)")
     if GameLib.GetPlayerCharacterName() == strCharacterName then
       local strTitle = v[ktSearchEntryData["strTitle"]]
-      local strCurrMemberCount = v[ktSearchEntryData["nMemberCount"]]
-      local nMaxGroupSize = self:GetMaxGroupSizeForSearchEntry(v[ktSearchEntryData["tCategoriesSelection"]])
+      local strCurrMemberCount = (GroupLib.GetMemberCount() == 0 and 1) or GroupLib.GetMemberCount() 
+      local nCategoryKey, nCategoryEntryKey = next(v[ktSearchEntryData["tCategorySelection"]])
+      local nMaxGroupSize = ktCategoriesData[nCategoryKey]["ktMaxGroupSize"][nCategoryEntryKey]
       
       self:CPrint("[BGF] - " .. strTitle .. " [" .. strCurrMemberCount .. "/" .. nMaxGroupSize .. "]")
       -- return after posting a single item so we dont spam.
@@ -790,8 +689,7 @@ function BetterGroupFinder:SelectCreateSearchEntryHeader()
   self:BuildCreateSearchEntriesActivitiesList()
 end
 
-function BetterGroupFinder:BuildCategoriesList()
-  for nSortOrder, tData in pairs(ktCategoriesData) do
+function BetterGroupFinder:BuildCategoryEntry(nSortOrder, strIconSprite, strEntry)
     local wndParent = self.wndMain:FindChild("TabContentListLeft")
     local wndCurrItem = Apollo.LoadForm(self.xmlDoc, "FilterCategoriesBase", wndParent, self)
     local wndCurrItemBtn = wndCurrItem:FindChild("FilterCategoriesBaseBtn")
@@ -802,12 +700,27 @@ function BetterGroupFinder:BuildCategoriesList()
       wndCurrItemBtn:SetCheck(true)
       self.wndMain:FindChild("TabContentRight"):FindChild("RefreshListOfSeekersBtn"):SetData(nSortOrder)
     end
-    wndCurrItemBtnIcon:SetSprite(tData["strIconSprite"])
-    wndCurrItemBtnText:SetText(tData["strName"])
-    wndCurrItem:SetData(tData["strName"])
+
+    wndCurrItemBtnIcon:SetSprite(strIconSprite)
+    wndCurrItemBtnText:SetText(strEntry)
+    wndCurrItem:SetData(strEntry)
     wndCurrItem:SetAnchorPoints(0, 0, 0, 0)
     local nLeft, nTop, nRight, nBottom = wndCurrItem:GetAnchorOffsets()
     wndCurrItem:SetAnchorOffsets(nLeft, ((nSortOrder - 1) * 57), (nRight - 8), (nSortOrder * 57))
+end
+
+function BetterGroupFinder:BuildCategoriesList()
+  local nActualSortOrder = 1
+  for nSortOrder, tData in pairs(ktCategoriesData) do
+    if tData["bShowEntriesInFilterList"] then
+      for _nSortOrder, _strEntry in pairs(tData["ktEntries"]) do
+        self:BuildCategoryEntry(nActualSortOrder, tData["ktIconSprites"][_nSortOrder], _strEntry)
+        nActualSortOrder = nActualSortOrder + 1
+      end
+    else
+      self:BuildCategoryEntry(nActualSortOrder, tData["strIconSprite"], tData["strName"])
+      nActualSortOrder = nActualSortOrder + 1
+    end
   end
 end
 
@@ -821,7 +734,9 @@ function BetterGroupFinder:BuildActivitiesList(ktSearchEntries)
       local wndCurrItemTitleText = wndCurrItem:FindChild("TabContentRightItemBaseBtnTitle")
       local wndCurrItemGroupStatusText = wndCurrItem:FindChild("TabContentRightItemBaseBtnGroupStatusText")
       local wndCurrItemBtn = wndCurrItem:FindChild("TabContentRightItemBaseBtn")
-      local nMaxGroupSize = self:GetMaxGroupSizeForSearchEntry(v[ktMessageTypes["SearchEntry"]["tCategoriesSelection"]])
+      local nCategoryKey, nCategoryEntryKey = next(v[ktMessageTypes["SearchEntry"]["tCategorySelection"]])
+      local nMaxGroupSize = ktCategoriesData[nCategoryKey]["ktMaxGroupSize"][nCategoryEntryKey]
+
       wndCurrItemTitleText:SetText(v[ktMessageTypes["SearchEntry"]["strTitle"]])
       wndCurrItemGroupStatusText:SetText(v[ktMessageTypes["SearchEntry"]["nMemberCount"]] .. "/" .. nMaxGroupSize)
       wndCurrItemBtn:SetTooltip(v[ktMessageTypes["SearchEntry"]["strDescription"]])
@@ -875,7 +790,7 @@ function BetterGroupFinder:OnSubmitSearchEntryBtn( wndHandler, wndControl, eMous
   local bNeedTank = wndSearchEntryData:FindChild("TankCheckbox"):IsChecked()
   local bNeedHealer = wndSearchEntryData:FindChild("HealerCheckbox"):IsChecked()
   local strDescription = wndSearchEntryData:FindChild("DescriptionTextBox"):GetText()
-  local tCategoriesSelection = {}
+  local tCategorySelection = nil
   for _, tCategory in pairs(self.wndMain:FindChild("TabContentListLeft"):GetChildren()) do
     local nCategory = tCategory:FindChild("MatchBtn"):GetData()
     for __, wndCategory in pairs(tCategory:GetChildren()) do
@@ -883,13 +798,17 @@ function BetterGroupFinder:OnSubmitSearchEntryBtn( wndHandler, wndControl, eMous
         local nMatchData = wndItem:FindChild("MatchBtn"):GetData()
         local bMatchSelected = wndItem:FindChild("SelectMatch"):IsChecked()
         if bMatchSelected then
-          if not tCategoriesSelection[nCategory] then
-            tCategoriesSelection[nCategory] = {}
-          end
-          table.insert(tCategoriesSelection[nCategory], nMatchData)
+          tCategorySelection = {}
+          tCategorySelection[nCategory] = nMatchData
+          break
         end
       end
     end
+  end
+
+  if not tCategorySelection then
+    self:CPrint("Better Group Finder: You must select a content category on the left")
+    return false
   end
 
   if string.len(strTitle) < 2 then
@@ -939,7 +858,7 @@ function BetterGroupFinder:OnSubmitSearchEntryBtn( wndHandler, wndControl, eMous
     [msgType["bNeedDPS"]] = bNeedDPS,
     [msgType["bNeedTank"]] = bNeedTank,
     [msgType["bNeedHealer"]] = bNeedHealer,
-    [msgType["tCategoriesSelection"]] = tCategoriesSelection,
+    [msgType["tCategorySelection"]] = tCategorySelection,
     [msgType["strSearchEntryId"]] = GameLib.GetPlayerCharacterName() .. "|" .. (nLocalSearchEntriesCount + 1),
     [msgType["nTimeStamp"]] = os.time(),
     [msgType["nMemberCount"]] = (GroupLib.GetMemberCount() == 0 and 1) or GroupLib.GetMemberCount()
@@ -967,8 +886,9 @@ function BetterGroupFinder:OnSearchEntryListBtnCheck( wndHandler, wndControl, eM
   wndContainer:FindChild("Title"):SetText(ktSearchEntryData[msgType["strTitle"]])
   wndContainer:FindChild("Description"):SetText(ktSearchEntryData[msgType["strDescription"]])
   wndContainer:FindChild("LeaderLabel"):FindChild("LeaderLabelText"):SetText(strCharacterName)
-  local strDestinations = table.concat(self:EnumDestinations(ktSearchEntryData[msgType["tCategoriesSelection"]]), ",")
-  wndContainer:FindChild("DestinationLabel"):FindChild("DestinationLabelText"):SetText(strDestinations)
+  local nCategoryKey, nCategoryEntryKey = next(ktSearchEntryData[msgType["tCategorySelection"]])
+  local strDestination = ktCategoriesData[nCategoryKey]["ktEntries"][nCategoryEntryKey]
+  wndContainer:FindChild("DestinationLabel"):FindChild("DestinationLabelText"):SetText(strDestination)
   wndButtonsContainer:FindChild("RequestInviteBtn"):SetData(ktSearchEntryData[msgType["strSearchEntryId"]])
 end
 
