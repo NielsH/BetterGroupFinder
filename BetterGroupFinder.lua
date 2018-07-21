@@ -245,6 +245,7 @@ function BetterGroupFinder:OnDocLoaded()
     -- Register handlers for events, slash commands and timer, etc.
     -- e.g. Apollo.RegisterEventHandler("KeyDown", "OnKeyDown", self)
     Apollo.RegisterEventHandler("ChangeWorld", "OnChangeWorld", self)
+    Apollo.RegisterEventHandler("Group_Updated", "OnGroup_Updated", self)
 
     Apollo.RegisterSlashCommand("bgf", "OnBetterGroupFinderOn", self)
     self.json = Apollo.GetPackage("Lib:dkJSON-2.5").tPackage
@@ -295,6 +296,22 @@ function BetterGroupFinder:OnChangeWorld()
       end
     end
   end
+end
+
+function BetterGroupFinder:OnGroup_Updated()
+  if GroupLib.InGroup() and not GroupLib.AmILeader() then
+    if not self.timerRemoveSearchEntryWhenNotLeader then
+      self.timerRemoveSearchEntryWhenNotLeader = ApolloTimer.Create(120, false, "RemoveSearchEntryWhenNotLeader", self)
+    end
+  end
+end
+
+function BetterGroupFinder:RemoveSearchEntryWhenNotLeader()
+  if GroupLib.InGroup() and not GroupLib.AmILeader() then
+    self:CPrint("Better Group Finder: You are not the leader of the current group. Auto-removing your search entry")
+    self:CancelAllSearchEntries()
+  end
+  self.timerRemoveSearchEntryWhenNotLeader = nil
 end
 
 function BetterGroupFinder:CancelSpecificSearchEntry(strSearchEntryId)
@@ -804,6 +821,11 @@ function BetterGroupFinder:OnSubmitSearchEntryBtn( wndHandler, wndControl, eMous
         end
       end
     end
+  end
+
+  if GroupLib.InGroup() and not GroupLib.AmILeader() then
+    self:CPrint("Better Group Finder: You must be the Group Leader to create a search entry")
+    return false
   end
 
   if not tCategorySelection then
